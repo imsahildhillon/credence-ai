@@ -1,2 +1,2 @@
 # credence-ai
-AI-powered career management platform for students.
+Trust Skills. Not Just Resumes.
