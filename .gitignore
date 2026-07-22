@@ -144,3 +144,7 @@ vite.config.ts.timestamp-*
 
 # macOS
 .DS_Store
+
+# Monorepo / build tooling
+.turbo
+build/
