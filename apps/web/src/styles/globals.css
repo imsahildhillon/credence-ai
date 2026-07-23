@@ -3,6 +3,14 @@
 
 @custom-variant dark (&:is(.dark *));
 
+/* Modal/drawer backdrop scrim — deliberately theme-independent (a fixed
+   dark, translucent value in both themes) since its job is to dim
+   whatever's behind it, not to participate in the light/dark palette. */
+:root,
+.dark {
+  --overlay: oklch(0.145 0.008 64 / 0.7);
+}
+
 /*
  * Credence AI — Design Token System
  *
@@ -375,6 +383,7 @@
   --color-disabled: var(--disabled);
   --color-disabled-foreground: var(--disabled-foreground);
   --color-ring-offset-background: var(--background);
+  --color-overlay: var(--overlay);
 
   --color-gray-50: var(--gray-50);
   --color-gray-100: var(--gray-100);
@@ -427,6 +436,10 @@
   --spacing-9: var(--space-9);
   --spacing-10: var(--space-10);
 
+  /* Aliases the bare `shadow` utility (no suffix) to our smallest elevation
+     level — without this, Tailwind's own built-in default box-shadow would
+     apply instead of any token in this file. */
+  --shadow: var(--shadow-sm);
   --shadow-sm: var(--shadow-sm);
   --shadow-md: var(--shadow-md);
   --shadow-lg: var(--shadow-lg);
