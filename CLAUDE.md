@@ -43,11 +43,12 @@ The stack is deliberately narrow. Adding a new language, framework, database, or
 | Language | **TypeScript** (strict) everywhere | One language across web, API, and workers; types encode our domain |
 | Web framework | **Next.js (App Router)** | Full-stack React, server components, mature ecosystem |
 | UI | **React**, **Tailwind CSS**, **shadcn/ui** components restyled with our design tokens | Accessible primitives (Radix under shadcn), token-driven theming per Brand Guidelines |
-| Database | **PostgreSQL** | Relational integrity for evidence↔claim provenance; battle-tested |
-| ORM & migrations | **Prisma** | Typed data access, declarative migrations |
+| Database | **PostgreSQL** (Supabase-hosted) | Relational integrity for evidence↔claim provenance; battle-tested |
+| Schema & migrations | **Supabase CLI** migrations (`supabase/migrations/`) | Declarative SQL migrations version-controlled with the repo; the Supabase project is the source of truth for schema (ADR-002) |
+| Data access | **@supabase/supabase-js** + generated TypeScript types (`supabase gen types typescript`) | No ORM layer; types are regenerated after every migration, never hand-written (ADR-002) |
 | Cache / queue | **Redis** + **BullMQ** | Async AI-analysis pipeline (repo analysis, interviews) must run outside the request cycle |
 | Validation | **Zod** | Single schema source for runtime validation + inferred types at every boundary |
-| Auth | **Auth.js (NextAuth)** with GitHub OAuth (students) + email magic-link (recruiters) | GitHub identity is core to the product |
+| Auth | **Supabase Auth** with GitHub OAuth (students) + email magic-link (recruiters) | GitHub identity is core to the product; RLS integrates natively via `auth.uid()` (ADR-001) |
 | AI | **Anthropic Claude API** via official `@anthropic-ai/sdk` | See §17 |
 | Testing | **Vitest** (unit/integration), **Testing Library** (components), **Playwright** (E2E) | See §22 |
 | Package manager | **pnpm** with workspace support | Deterministic, fast, monorepo-ready |
@@ -65,7 +66,7 @@ Single monorepo. Structure is **feature-first inside layer-second**: top-level f
 credence-ai/
 ├── CLAUDE.md                  # This handbook
 ├── docs/                      # Product & architecture docs (numbered, kebab-case)
-├── prisma/                    # schema.prisma + migrations/
+├── supabase/                  # Supabase CLI project: migrations/, functions/, seed/ (ADR-002)
 ├── public/                    # Static assets
 ├── src/
 │   ├── app/                   # Next.js App Router: routes, layouts, route handlers only
@@ -88,8 +89,7 @@ credence-ai/
 │   │   └── ui/                # shadcn/ui primitives (restyled, never forked per-feature)
 │   ├── lib/                   # Shared, feature-agnostic utilities
 │   │   ├── ai/                # Claude client, prompts, evaluation contracts (§17)
-│   │   ├── db.ts              # Prisma client singleton
-│   │   ├── auth.ts            # Auth.js configuration
+│   │   ├── supabase/          # Supabase client factories (browser/server/admin/middleware) — ADR-001, ADR-002
 │   │   └── logger.ts          # Pino logger factory
 │   ├── workers/               # BullMQ processors (analysis, interviews, notifications)
 │   ├── styles/                # globals.css + design tokens (§12)
@@ -232,9 +232,9 @@ Tokens are the single source of visual truth, defined once in `src/styles/` as C
 
 1. **Layering inside each feature module:**
    - `server/service.ts` — use-case orchestration (the only layer route handlers call)
-   - `server/queries.ts` — data access (the only layer touching Prisma)
+   - `server/queries.ts` — data access (the only layer constructing/using a Supabase client)
    - `server/jobs.ts` — queue producers/consumers for this feature
-   - Services never touch Prisma directly; queries never contain business rules.
+   - Services never construct a Supabase client directly; queries never contain business rules.
 2. **All AI work is asynchronous.** Repo analysis, interview evaluation, and report generation run as queued jobs with staged, honest progress reporting persisted so the UI can show "Analyzing repository 3 of 7" (Brand Guidelines: progress honesty). Request handlers never call the LLM inline except for genuinely interactive interview turns, which stream.
 3. **Jobs are idempotent and resumable.** Every job has a deterministic idempotency key; re-running a completed job is a no-op. Retries with exponential backoff; poison messages go to a dead-letter queue with alerting.
 4. **The evaluation pipeline is a versioned, auditable pipeline:** ingest → normalize → analyze → assess → explain. Each stage persists its output; every assessment stores the `pipeline_version` and `model_id` that produced it, so any historical assessment can be explained and reproduced.
@@ -248,10 +248,10 @@ Tokens are the single source of visual truth, defined once in `src/styles/` as C
 2. **Provenance is structural.** `skill_assessments` cannot exist without rows in `assessment_evidence` linking to `evidence_items` — enforced by writing them in one transaction and verified by an integrity check job. Every assessment row carries `pipeline_version`, `model_id`, `reasoning` (the plain-language explanation), and `confidence_level`. **A bare number in the database is a schema-review rejection.**
 3. **Append-only for anything auditable.** Assessments, consent changes, profile views, and integrity flags are never `UPDATE`d in place — new versions are appended with `superseded_by` links. Consent and access history is an immutable audit log (§18).
 4. **Soft delete for user content, hard delete for the user.** Profile artifacts soft-delete (`deleted_at`); a verified account-deletion request hard-deletes personal data per our privacy commitments, via a tested, scripted process — not ad-hoc SQL.
-5. **Migrations:** every schema change is a Prisma migration in the same PR as the code; migrations are backward-compatible with the currently deployed code (expand → migrate → contract for renames/drops); destructive migrations require an explicit second review and a rollback note.
+5. **Migrations:** every schema change is a Supabase CLI migration (`supabase/migrations/`) in the same PR as the code, with the regenerated `Database` type (`supabase gen types typescript`) committed alongside it (ADR-002); migrations are backward-compatible with the currently deployed code (expand → migrate → contract for renames/drops); destructive migrations require an explicit second review and a rollback note.
 6. **Naming:** `snake_case`, plural tables, `id` (UUIDv7) primary keys, `created_at`/`updated_at` on every table, foreign keys as `<singular>_id`.
 7. **Indexes are added with the query that needs them**, with the query plan noted in the PR. Recruiter search access paths are index-designed up front, not patched later.
-8. **No raw SQL in features.** Prisma everywhere; genuinely necessary raw queries live in `queries.ts` behind a typed function with a comment justifying them.
+8. **No raw SQL in application query code.** All reads/writes go through the generated-typed `@supabase/supabase-js` client in `queries.ts`; a genuinely necessary raw query goes through `.rpc()` on a documented Postgres function, never an inline SQL string, and is justified by a comment. (Schema-defining SQL in `supabase/migrations/` is a different concern — that *is* the migration tool, per ADR-002 — and is reviewed as such.)
 9. **Data classification lives in the schema docs:** every table is marked `public | internal | sensitive | regulated`; `sensitive`+ tables (interview transcripts, assessments, consent records) get field-level access review before any new read path ships.
 
 ## 16. API Standards
@@ -296,10 +296,10 @@ AI produces our core product — assessments of people — so this section is th
 
 1. **Threat model honestly:** we hold career-defining assessments, private repos' metadata, interview recordings/transcripts, and consent records for two user classes with asymmetric power. Attackers include scrapers, candidate impersonators, gaming attempts, and over-curious recruiters.
 2. **AuthN/AuthZ:**
-   - Sessions via Auth.js, secure/httpOnly/sameSite cookies; OAuth tokens (GitHub) encrypted at rest, minimal scopes, refreshed properly, revocable.
-   - **Authorization is resource-level and deny-by-default**, checked in the service layer on every access (no "the UI hides it" security). Recruiter access to any candidate artifact flows through the single consent check (§16.5).
+   - Sessions via Supabase Auth (ADR-001), secure/httpOnly/sameSite cookies; OAuth tokens (GitHub) encrypted at rest, minimal scopes, refreshed properly, revocable.
+   - **Authorization is resource-level and deny-by-default**, enforced structurally via Postgres Row Level Security and checked again in the service layer on every access (no "the UI hides it" security). Recruiter access to any candidate artifact flows through the single consent check (§16.5).
    - Roles (`student`, `recruiter`, `admin`) are coarse gates only; real access control is consent + ownership.
-3. **Input handling:** Zod at every boundary (§6.7) including webhooks and queue payloads; parameterized queries only (Prisma); strict content-security policy; all user-supplied content (README excerpts, portfolio text) rendered as text or sanitized — never `dangerouslySetInnerHTML` with user content.
+3. **Input handling:** Zod at every boundary (§6.7) including webhooks and queue payloads; parameterized queries only (the Supabase client's query builder or `.rpc()` — never string-built SQL in application code); strict content-security policy; all user-supplied content (README excerpts, portfolio text) rendered as text or sanitized — never `dangerouslySetInnerHTML` with user content.
 4. **LLM-specific security:** candidate-supplied content entering prompts (READMEs, code, portfolio text) is **untrusted input** — prompts are structured so instructions and data are separated, and model outputs never trigger privileged actions without validation. Prompt-injection attempts are an expected gaming vector and are integrity-flagged, not just ignored.
 5. **Secrets:** never in code, logs, or client bundles; environment-injected, rotated on any suspicion, distinct per environment. CI includes secret scanning.
 6. **Data protection:** TLS everywhere; encryption at rest for the database and object storage; interview media in private buckets with short-lived signed URLs; PII fields inventoried (§15.9).
@@ -382,7 +382,7 @@ Budgets are enforced, not aspired to. A change that busts a budget needs either 
 ## 24. Documentation Standards
 
 1. **Docs live with the code** in `docs/`, numbered and kebab-case (`01-product-definition-document.md`, `02-brand-guidelines.md`, …). The repo is the single source of truth — no drifting wikis.
-2. **Architecture Decision Records** in `docs/adr/NNNN-title.md` (context → options → decision → consequences). Required for: new dependencies/services, schema-architecture changes, AI-pipeline design changes, anything §3 marks forbidden-without-ADR. ADRs are immutable; superseding ADRs link back.
+2. **Architecture Decision Records** in `docs/adr/ADR-NNN-title.md` (context → options → decision → consequences). Required for: new dependencies/services, schema-architecture changes, AI-pipeline design changes, anything §3 marks forbidden-without-ADR. ADRs are immutable; superseding ADRs link back.
 3. **Each feature module has a `README.md`** (10–30 lines): purpose, public interface, key invariants, links to relevant ADRs. Updated in the PR that changes the behavior it describes.
 4. **The AI layer is documented to audit standard:** every prompt file carries a header (purpose, version, inputs, output schema, eval results reference); the pipeline has an end-to-end data-flow document; this is what makes "explain any assessment" possible retroactively.
 5. **Runbooks** in `docs/runbooks/` for every alert and operational procedure (deploy, rollback, queue drain, incident response, data-deletion request).
@@ -451,14 +451,14 @@ Anything less is *in progress*, whatever the ticket says.
 
 ## 28. Development Workflow
 
-1. **Local setup is one command** (`pnpm setup` or documented equivalent): env from a validated `.env.example`, Docker Compose for Postgres/Redis, seeded realistic (anonymized) dev data including fixture candidates and repos. A new engineer runs the app within 30 minutes.
+1. **Local setup is one command** (`pnpm setup` or documented equivalent): env from a validated `.env.example`, `supabase start` for the local Supabase stack (Postgres, Auth, Storage — ADR-002) + Docker Compose for Redis, seeded realistic (anonymized) dev data including fixture candidates and repos. A new engineer runs the app within 30 minutes.
 2. **Environments:** local → preview (per-PR deploy) → staging (production-parity, fake AI spend limits) → production. Config differences live only in environment variables validated by `src/config/`.
 3. **The loop:** pick a ticket → branch → write/adjust tests with the change → implement → run the full local check (`pnpm check`: lint + typecheck + unit + affected integration) → PR with preview deploy → review → merge → auto-deploy → verify.
 4. **AI development discipline:** prompt iteration happens against the eval suite locally with recorded fixtures first, live API second; a dedicated dev workspace API key with hard spend caps; never the production key locally.
 5. **Schema changes:** migration + code in one PR; run against a production-clone locally before merge for destructive changes.
 6. **Definition of Ready** for tickets: user-visible behavior stated, affected surfaces (student/recruiter/both) named, edge/failure UX specified, and — for assessment features — the evidence/explainability requirements spelled out.
 7. **Weekly rhythms:** dependency review, debt triage (monthly), eval-suite trend review, and a rotating "platform steward" who owns CI health, flaky tests, and alert noise for the week.
-8. **Claude Code specifics:** follow this handbook without being re-told; prefer editing existing patterns over inventing new ones; when a request conflicts with a hard rule here (consent, provenance, semantic color, a11y), flag the conflict rather than silently complying; never commit directly to `main`; never touch `prisma/migrations` history.
+8. **Claude Code specifics:** follow this handbook without being re-told; prefer editing existing patterns over inventing new ones; when a request conflicts with a hard rule here (consent, provenance, semantic color, a11y), flag the conflict rather than silently complying; never commit directly to `main`; never touch `supabase/migrations` history.
 
 ## 29. Future Scalability Principles
 
