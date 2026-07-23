@@ -1,9 +1,9 @@
-import type { Metadata } from "next";
-import "./globals.css";
+import type { Metadata } from 'next';
+import './globals.css';
 
 export const metadata: Metadata = {
-  title: "Credence AI",
-  description: "Credence AI",
+  title: 'Credence AI',
+  description: 'Credence AI',
 };
 
 export default function RootLayout({
