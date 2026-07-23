@@ -24,7 +24,13 @@ import { updateSession } from '@/lib/supabase/middleware';
  */
 export const PUBLIC_ROUTES = ['/', '/auth/callback', '/recruiter-access'] as const;
 export const AUTH_ROUTES = ['/login', '/signup'] as const;
-export const PROTECTED_ROUTE_PREFIXES = ['/dashboard', '/profile', '/settings'] as const;
+export const PROTECTED_ROUTE_PREFIXES = [
+  '/dashboard',
+  '/profile',
+  '/settings',
+  '/onboarding',
+  '/analysis',
+] as const;
 
 export async function middleware(request: NextRequest) {
   const { response, user } = await updateSession(request);

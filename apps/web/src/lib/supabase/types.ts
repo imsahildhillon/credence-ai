@@ -21,8 +21,8 @@ export type Database = {
           error_message: string | null;
           evidence_item_id: string | null;
           id: string;
-          model: string;
-          pipeline_version: string;
+          model: string | null;
+          pipeline_version: string | null;
           profile_id: string;
           prompt_version: string | null;
           started_at: string | null;
@@ -37,8 +37,8 @@ export type Database = {
           error_message?: string | null;
           evidence_item_id?: string | null;
           id?: string;
-          model: string;
-          pipeline_version: string;
+          model?: string | null;
+          pipeline_version?: string | null;
           profile_id: string;
           prompt_version?: string | null;
           started_at?: string | null;
@@ -53,8 +53,8 @@ export type Database = {
           error_message?: string | null;
           evidence_item_id?: string | null;
           id?: string;
-          model?: string;
-          pipeline_version?: string;
+          model?: string | null;
+          pipeline_version?: string | null;
           profile_id?: string;
           prompt_version?: string | null;
           started_at?: string | null;
@@ -442,12 +442,15 @@ export type Database = {
           full_name: string;
           github_account_id: string;
           github_repo_id: number;
+          github_updated_at: string | null;
+          html_url: string | null;
           id: string;
           included: boolean;
           is_archived: boolean;
           is_fork: boolean;
           is_private: boolean;
           primary_language: string | null;
+          stargazers_count: number;
           updated_at: string;
         };
         Insert: {
@@ -458,12 +461,15 @@ export type Database = {
           full_name: string;
           github_account_id: string;
           github_repo_id: number;
+          github_updated_at?: string | null;
+          html_url?: string | null;
           id?: string;
           included?: boolean;
           is_archived?: boolean;
           is_fork?: boolean;
           is_private?: boolean;
           primary_language?: string | null;
+          stargazers_count?: number;
           updated_at?: string;
         };
         Update: {
@@ -474,12 +480,15 @@ export type Database = {
           full_name?: string;
           github_account_id?: string;
           github_repo_id?: number;
+          github_updated_at?: string | null;
+          html_url?: string | null;
           id?: string;
           included?: boolean;
           is_archived?: boolean;
           is_fork?: boolean;
           is_private?: boolean;
           primary_language?: string | null;
+          stargazers_count?: number;
           updated_at?: string;
         };
         Relationships: [

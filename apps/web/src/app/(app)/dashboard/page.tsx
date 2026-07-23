@@ -1,11 +1,13 @@
 import { redirect } from 'next/navigation';
 
-import { getCurrentUser, getOrCreateProfile } from '@/features/auth/server/service';
+import { getCurrentUser } from '@/features/auth/server/service';
+import { getLatestAnalysis } from '@/features/github/queries';
 
 /**
- * Identity-verification placeholder — proves session + profile bootstrap
- * work end-to-end. Not a real dashboard; a future feature pass replaces
- * this content entirely (CLAUDE.md: "Do NOT build dashboards").
+ * There is no standalone dashboard in V1 (CLAUDE.md: "Do NOT build
+ * dashboards"). Post-login this is the entry router: it sends the student
+ * into onboarding, or to their queued analysis if they've already started
+ * one — so "resume where you left off" works without a real dashboard yet.
  */
 export default async function DashboardPage() {
   const user = await getCurrentUser();
@@ -13,14 +15,6 @@ export default async function DashboardPage() {
     redirect('/login');
   }
 
-  const profile = await getOrCreateProfile(user);
-
-  return (
-    <div>
-      <h1 className="text-title">Dashboard</h1>
-      <p className="text-caption text-muted-foreground">
-        Signed in as {user.email ?? user.id} — role: {profile.role}
-      </p>
-    </div>
-  );
+  const analysis = await getLatestAnalysis(user.id);
+  redirect(analysis ? '/analysis' : '/onboarding');
 }
