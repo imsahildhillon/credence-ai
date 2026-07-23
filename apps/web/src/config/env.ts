@@ -8,7 +8,12 @@ import { z } from 'zod';
  *
  *   - Supabase   (database, auth backend, storage)
  *   - Public configuration (client-safe base URL)
- *   - Authentication (Auth.js session/JWT core)
+ *
+ * Authentication has no eager env requirement of its own: Supabase Auth
+ * (ADR-001) is configured entirely in the Supabase project (dashboard —
+ * see apps/web/src/features/auth/README.md) and reuses the Supabase
+ * variables above; there is no separate session/JWT secret to validate
+ * here the way Auth.js would have needed.
  *
  * AI (src/lib/ai/env.ts) and GitHub integration (src/lib/github/env.ts)
  * credentials are deliberately excluded — the application must be able to
@@ -24,15 +29,8 @@ const CoreEnvSchema = z.object({
   NEXT_PUBLIC_SUPABASE_ANON_KEY: z.string().min(1, 'NEXT_PUBLIC_SUPABASE_ANON_KEY is required'),
   SUPABASE_SERVICE_ROLE_KEY: z.string().min(1, 'SUPABASE_SERVICE_ROLE_KEY is required'),
 
-  // Database — Prisma's direct connection to the Supabase-hosted Postgres
-  // instance (CLAUDE.md §3: Prisma is the ORM/migration layer).
+  // Database — direct Postgres connection to the Supabase-hosted instance.
   DATABASE_URL: z.string().min(1, 'DATABASE_URL is required'),
-
-  // Authentication — Auth.js session/JWT core. Provider-specific
-  // credentials (e.g. GitHub OAuth) are validated lazily by their own
-  // integration module, not here, so a missing provider never blocks boot.
-  NEXTAUTH_URL: z.string().url('NEXTAUTH_URL must be a valid URL'),
-  NEXTAUTH_SECRET: z.string().min(1, 'NEXTAUTH_SECRET is required'),
 
   // Public configuration — client-safe, NEXT_PUBLIC_-prefixed only
   // (CLAUDE.md §9.6).

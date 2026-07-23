@@ -7,14 +7,14 @@ import { createLazyEnv } from '@/config/lazy-env';
  * GitHub integration environment configuration — validated lazily, not at
  * boot.
  *
- * These are the GitHub OAuth application's own client credentials (used
- * both for GitHub sign-in and for reading a candidate's repositories on
- * their behalf — CLAUDE.md §3: "GitHub identity is core to the product").
- * Auth.js's own session/JWT core (`NEXTAUTH_URL`, `NEXTAUTH_SECRET`) stays
- * in the eager `env.ts` schema so the app always boots; the GitHub
- * provider specifically can be configured after boot without blocking it.
- * Call `getGithubEnv()` wherever the GitHub OAuth provider or repository
- * client is actually constructed.
+ * These are a *separate* GitHub OAuth application's credentials, used only
+ * for reading a candidate's repositories on their behalf once granted
+ * (PRD FR-1.2's private-repo escalation and the github-analysis pipeline)
+ * — not the student sign-in flow, which goes through the GitHub provider
+ * configured directly in the Supabase dashboard (ADR-001,
+ * apps/web/src/features/auth/README.md). Kept lazy so a missing
+ * repository-access credential never blocks app boot.
+ * Call `getGithubEnv()` wherever that repository client is constructed.
  */
 const GithubEnvSchema = z.object({
   GITHUB_CLIENT_ID: z.string().min(1, 'GITHUB_CLIENT_ID is required'),
