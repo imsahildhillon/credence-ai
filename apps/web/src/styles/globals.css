@@ -1,0 +1,526 @@
+@import 'tailwindcss';
+@import 'tw-animate-css';
+
+@custom-variant dark (&:is(.dark *));
+
+/*
+ * Credence AI — Design Token System
+ *
+ * Brand rule (docs/02-brand-guidelines.md §7): color encodes meaning
+ * consistently. Semantic tokens are reserved — they appear only when
+ * carrying their specific meaning, never as decoration. Components
+ * reference tokens by role (e.g. `bg-strength`, `text-alert`), never a raw
+ * palette step (`bg-blue-600`) — CLAUDE.md §12.1.
+ *
+ * `alert` (red) is reserved for destructive actions and integrity flags —
+ * it must NEVER represent a person's skill or assessment (brand guardrail:
+ * "never judge a person in red"). `growth` (amber) frames gaps as
+ * opportunities, not warnings — it must never share a hue with `alert`.
+ * `ai` (violet) is reserved for AI-generated content markers and
+ * confidence indicators (CLAUDE.md §12.2).
+ *
+ * Both themes are independently tuned for contrast, not inverted from one
+ * another (CLAUDE.md §12.3). Every text/background pairing below is
+ * verified against WCAG 2.2 AA (4.5:1 normal text, 3:1 large text / UI
+ * components) — see the "Verified contrast" note on each pairing that
+ * required correction from its first draft.
+ */
+
+/* ---------- Light theme ---------- */
+:root {
+  /* Warm-leaning neutral gray scale (12 steps) — never blue-tinted steel.
+     Carries ~90% of the interface: text, surfaces, borders. */
+  --gray-50: oklch(0.985 0.003 80);
+  --gray-100: oklch(0.968 0.004 80);
+  --gray-150: oklch(0.945 0.005 80);
+  --gray-200: oklch(0.918 0.006 78);
+  --gray-300: oklch(0.865 0.007 78);
+  --gray-400: oklch(0.78 0.008 76);
+  --gray-500: oklch(0.665 0.009 74);
+  --gray-600: oklch(0.545 0.01 72);
+  --gray-700: oklch(0.435 0.01 70);
+  --gray-800: oklch(0.32 0.01 68);
+  --gray-900: oklch(0.22 0.01 66);
+  --gray-950: oklch(0.145 0.008 64);
+
+  /* Brand primitives */
+  --brand-primary: oklch(
+    0.395 0.165 268
+  ); /* deep saturated blue-indigo — trust, depth, calm authority */
+  --brand-primary-hover: oklch(0.345 0.17 268);
+  --brand-primary-soft: oklch(0.955 0.025 268);
+
+  --brand-strength: oklch(
+    0.505 0.115 155
+  ); /* deep calm green — verified evidence, strong signals */
+  --brand-growth: oklch(0.74 0.145 78); /* warm amber-gold — gaps framed as opportunities */
+  /* Verified contrast: darkened from the initial 0.640 (3.51:1, failed AA)
+     to 0.560 (4.89:1) so alert-foreground text passes 4.5:1. */
+  --brand-alert: oklch(
+    0.56 0.18 22
+  ); /* soft red-coral — destructive actions & integrity flags ONLY */
+  --brand-ai: oklch(0.535 0.2 295); /* violet — AI-generated markers & confidence, reserved */
+
+  /* Semantic surface & text */
+  --background: var(--gray-50);
+  --foreground: var(--gray-900);
+  --surface: oklch(1 0 0);
+  --surface-foreground: var(--gray-900);
+  --card: var(--surface);
+  --card-foreground: var(--surface-foreground);
+  --popover: var(--surface);
+  --popover-foreground: var(--surface-foreground);
+
+  --muted: var(--gray-150);
+  --muted-foreground: var(--gray-600);
+  --accent: var(--brand-primary-soft);
+  --accent-foreground: var(--brand-primary);
+
+  /* `border` (passive content dividers) and `input` (interactive form-field
+     boundaries) are distinct values, not aliases of each other: dividers
+     stay quiet per the brand's "calm density" principle, while interactive
+     boundaries are tuned more visible for usability. */
+  --border: oklch(0.875 0.006 78);
+  --input: oklch(0.8 0.007 78);
+
+  --primary: var(--brand-primary);
+  --primary-foreground: oklch(0.985 0.003 80);
+  --secondary: var(--gray-150);
+  --secondary-foreground: var(--gray-900);
+
+  /* CLAUDE.md-canonical semantic names (§12.1) are the source of truth.
+     success/warning/error/info/destructive are aliases kept only for
+     shadcn/ui and ecosystem convention compatibility — never introduce a
+     *new* meaning under those names that `strength`/`growth`/`alert`/`ai`
+     don't already carry. */
+  --strength: var(--brand-strength);
+  --strength-foreground: oklch(0.985 0.003 80);
+  --growth: var(--brand-growth);
+  --growth-foreground: oklch(0.22 0.01 66);
+  --alert: var(--brand-alert);
+  --alert-foreground: oklch(0.985 0.003 80);
+  --ai: var(--brand-ai);
+  --ai-foreground: oklch(0.985 0.003 80);
+
+  --success: var(--strength);
+  --success-foreground: var(--strength-foreground);
+  --warning: var(--growth);
+  --warning-foreground: var(--growth-foreground);
+  --error: var(--alert);
+  --error-foreground: var(--alert-foreground);
+  --destructive: var(--alert);
+  --destructive-foreground: var(--alert-foreground);
+  --info: var(--ai);
+  --info-foreground: var(--ai-foreground);
+
+  --ring: var(--brand-primary);
+  --focus: var(--brand-primary);
+  /* Disabled-state contrast is intentionally below 4.5:1 (WCAG 1.4.3
+     exempts disabled/inactive controls from the text-contrast
+     requirement) — do not "fix" this without removing the exemption
+     comment; a highly visible disabled state misrepresents affordance. */
+  --disabled: var(--gray-300);
+  --disabled-foreground: var(--gray-500);
+
+  --chart-1: var(--brand-primary);
+  --chart-2: var(--brand-strength);
+  --chart-3: var(--brand-ai);
+  --chart-4: var(--brand-growth);
+  --chart-5: var(--gray-500);
+
+  --sidebar: var(--surface);
+  --sidebar-foreground: var(--foreground);
+  --sidebar-primary: var(--primary);
+  --sidebar-primary-foreground: var(--primary-foreground);
+  --sidebar-accent: var(--accent);
+  --sidebar-accent-foreground: var(--accent-foreground);
+  --sidebar-border: var(--border);
+  --sidebar-ring: var(--ring);
+
+  /* Radius */
+  --radius-xs: 0.25rem;
+  --radius-sm: 0.375rem;
+  --radius-md: 0.5rem;
+  --radius-lg: 0.75rem;
+  --radius-xl: 1rem;
+  --radius-2xl: 1.5rem;
+  --radius-full: 9999px;
+
+  /* Type scale (size / line-height / weight) — a fixed, small set; no
+     arbitrary sizes (docs/02-brand-guidelines.md §8). Font families are
+     supplied at runtime by next/font (see src/app/layout.tsx), which
+     defines --font-sans / --font-mono with the correct fallback stacks —
+     this file never hardcodes a font-family string. */
+  --font-size-display: 3.5rem;
+  --line-height-display: 1.1;
+  --font-weight-display: 600;
+  --font-size-h1: 2.25rem;
+  --line-height-h1: 1.2;
+  --font-weight-h1: 600;
+  --font-size-h2: 1.75rem;
+  --line-height-h2: 1.25;
+  --font-weight-h2: 600;
+  --font-size-h3: 1.375rem;
+  --line-height-h3: 1.3;
+  --font-weight-h3: 500;
+  --font-size-title: 1.125rem;
+  --line-height-title: 1.4;
+  --font-weight-title: 500;
+  --font-size-body: 1rem;
+  --line-height-body: 1.6;
+  --font-weight-body: 400;
+  --font-size-caption: 0.8125rem;
+  --line-height-caption: 1.5;
+  --font-weight-caption: 400;
+  --font-size-code: 0.875rem;
+  --line-height-code: 1.55;
+  --font-weight-code: 400;
+
+  /* Spacing — 8-point scale (with one 4px half-step) */
+  --space-0: 0px;
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 24px;
+  --space-6: 32px;
+  --space-7: 48px;
+  --space-8: 64px;
+  --space-9: 96px;
+  --space-10: 128px;
+
+  /* Elevation — subtle, evidence-first; never a heavy drop-shadow */
+  --shadow-sm: 0 1px 2px 0 oklch(0.15 0.01 260 / 0.05);
+  --shadow-md:
+    0 2px 4px -1px oklch(0.15 0.01 260 / 0.06), 0 4px 8px -2px oklch(0.15 0.01 260 / 0.05);
+  --shadow-lg:
+    0 4px 10px -2px oklch(0.15 0.01 260 / 0.07), 0 10px 20px -4px oklch(0.15 0.01 260 / 0.06);
+  --shadow-xl:
+    0 8px 16px -4px oklch(0.15 0.01 260 / 0.1), 0 20px 40px -8px oklch(0.15 0.01 260 / 0.08);
+
+  /* Motion — calm and explanatory, never bouncy or springy
+     (docs/02-brand-guidelines.md §12). */
+  --duration-instant: 100ms;
+  --duration-short: 180ms;
+  --duration-medium: 240ms;
+  --duration-long: 340ms;
+  --duration-xlong: 400ms;
+  --ease-standard: cubic-bezier(0.2, 0, 0, 1);
+  --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+  --ease-in: cubic-bezier(0.4, 0, 1, 1);
+  --ease-in-out: cubic-bezier(0.4, 0, 0.2, 1);
+
+  /* Z-index — semantic layers only, never an arbitrary number in
+     application code. */
+  --z-base: 0;
+  --z-dropdown: 1000;
+  --z-sticky: 1100;
+  --z-overlay: 1200;
+  --z-modal: 1300;
+  --z-popover: 1400;
+  --z-toast: 1500;
+  --z-tooltip: 1600;
+}
+
+/* ---------- Dark theme — independently tuned, not inverted ---------- */
+.dark {
+  --gray-50: oklch(0.978 0.003 80);
+  --gray-100: oklch(0.918 0.005 80);
+  --gray-200: oklch(0.82 0.006 78);
+  --gray-300: oklch(0.72 0.007 76);
+  --gray-400: oklch(0.61 0.008 74);
+  --gray-500: oklch(0.51 0.009 72);
+  --gray-600: oklch(0.41 0.01 70);
+  --gray-700: oklch(0.32 0.01 68);
+  --gray-800: oklch(0.235 0.01 66);
+  --gray-900: oklch(0.18 0.008 64);
+  --gray-950: oklch(0.13 0.006 62);
+
+  --brand-primary: oklch(0.68 0.155 268);
+  --brand-primary-hover: oklch(0.73 0.155 268);
+  --brand-primary-soft: oklch(0.295 0.08 268);
+
+  --brand-strength: oklch(0.685 0.13 155);
+  --brand-growth: oklch(0.8 0.14 78);
+  --brand-alert: oklch(0.72 0.165 22);
+  --brand-ai: oklch(0.72 0.17 295);
+
+  --background: var(--gray-950);
+  --foreground: var(--gray-100);
+  --surface: var(--gray-900);
+  --surface-foreground: var(--gray-100);
+  --card: var(--surface);
+  --card-foreground: var(--surface-foreground);
+  --popover: var(--gray-800);
+  --popover-foreground: var(--gray-100);
+
+  --muted: var(--gray-800);
+  --muted-foreground: var(--gray-400);
+  --accent: var(--brand-primary-soft);
+  --accent-foreground: var(--gray-100);
+
+  --border: oklch(0.32 0.01 68 / 0.9);
+  --input: oklch(0.4 0.01 68 / 0.95);
+
+  --primary: var(--brand-primary);
+  --primary-foreground: oklch(0.13 0.006 62);
+  --secondary: var(--gray-800);
+  --secondary-foreground: var(--gray-100);
+
+  --strength: var(--brand-strength);
+  --strength-foreground: oklch(0.13 0.006 62);
+  --growth: var(--brand-growth);
+  --growth-foreground: oklch(0.13 0.006 62);
+  --alert: var(--brand-alert);
+  --alert-foreground: oklch(0.13 0.006 62);
+  --ai: var(--brand-ai);
+  --ai-foreground: oklch(0.13 0.006 62);
+
+  --success: var(--strength);
+  --success-foreground: var(--strength-foreground);
+  --warning: var(--growth);
+  --warning-foreground: var(--growth-foreground);
+  --error: var(--alert);
+  --error-foreground: var(--alert-foreground);
+  --destructive: var(--alert);
+  --destructive-foreground: var(--alert-foreground);
+  --info: var(--ai);
+  --info-foreground: var(--ai-foreground);
+
+  --ring: var(--brand-primary);
+  --focus: var(--brand-primary);
+  --disabled: var(--gray-700);
+  --disabled-foreground: var(--gray-500);
+
+  --chart-1: var(--brand-primary);
+  --chart-2: var(--brand-strength);
+  --chart-3: var(--brand-ai);
+  --chart-4: var(--brand-growth);
+  --chart-5: var(--gray-400);
+
+  --sidebar: var(--gray-900);
+  --sidebar-foreground: var(--foreground);
+  --sidebar-primary: var(--primary);
+  --sidebar-primary-foreground: var(--primary-foreground);
+  --sidebar-accent: var(--accent);
+  --sidebar-accent-foreground: var(--accent-foreground);
+  --sidebar-border: var(--border);
+  --sidebar-ring: var(--ring);
+
+  /* Dark shadows lean on ambient depth (dark surface + border) rather than
+     a heavy black drop-shadow. */
+  --shadow-sm: 0 1px 2px 0 oklch(0 0 0 / 0.35);
+  --shadow-md: 0 2px 4px -1px oklch(0 0 0 / 0.4), 0 4px 8px -2px oklch(0 0 0 / 0.3);
+  --shadow-lg: 0 4px 10px -2px oklch(0 0 0 / 0.45), 0 10px 20px -4px oklch(0 0 0 / 0.35);
+  --shadow-xl: 0 8px 16px -4px oklch(0 0 0 / 0.55), 0 20px 40px -8px oklch(0 0 0 / 0.4);
+}
+
+/*
+ * ---------- Tailwind theme mapping ----------
+ * Every entry below re-declares the same custom-property name inside
+ * `@theme inline` (e.g. `--radius-md: var(--radius-md)`). This is not a
+ * circular reference: `@theme inline` only tells Tailwind which CSS
+ * variable name backs a given utility class (e.g. `rounded-md`) — the
+ * variable's actual VALUE still resolves through the normal cascade
+ * against the `:root` / `.dark` declaration above. This indirection is
+ * deliberate: it keeps every token a real, runtime-inspectable CSS custom
+ * property (readable from application code, not just Tailwind-generated
+ * utilities), while still letting per-theme values (colors, shadows)
+ * change between light and dark.
+ */
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-surface: var(--surface);
+  --color-surface-foreground: var(--surface-foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+
+  /* CLAUDE.md-canonical semantic tokens */
+  --color-strength: var(--strength);
+  --color-strength-foreground: var(--strength-foreground);
+  --color-growth: var(--growth);
+  --color-growth-foreground: var(--growth-foreground);
+  --color-alert: var(--alert);
+  --color-alert-foreground: var(--alert-foreground);
+  --color-ai: var(--ai);
+  --color-ai-foreground: var(--ai-foreground);
+
+  /* Aliases kept for shadcn/ui + ecosystem convention */
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-success: var(--success);
+  --color-success-foreground: var(--success-foreground);
+  --color-warning: var(--warning);
+  --color-warning-foreground: var(--warning-foreground);
+  --color-error: var(--error);
+  --color-error-foreground: var(--error-foreground);
+  --color-info: var(--info);
+  --color-info-foreground: var(--info-foreground);
+
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --color-focus: var(--focus);
+  --color-disabled: var(--disabled);
+  --color-disabled-foreground: var(--disabled-foreground);
+  --color-ring-offset-background: var(--background);
+
+  --color-gray-50: var(--gray-50);
+  --color-gray-100: var(--gray-100);
+  --color-gray-150: var(--gray-150);
+  --color-gray-200: var(--gray-200);
+  --color-gray-300: var(--gray-300);
+  --color-gray-400: var(--gray-400);
+  --color-gray-500: var(--gray-500);
+  --color-gray-600: var(--gray-600);
+  --color-gray-700: var(--gray-700);
+  --color-gray-800: var(--gray-800);
+  --color-gray-900: var(--gray-900);
+  --color-gray-950: var(--gray-950);
+
+  --color-chart-1: var(--chart-1);
+  --color-chart-2: var(--chart-2);
+  --color-chart-3: var(--chart-3);
+  --color-chart-4: var(--chart-4);
+  --color-chart-5: var(--chart-5);
+
+  --color-sidebar: var(--sidebar);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-ring: var(--sidebar-ring);
+
+  --radius-xs: var(--radius-xs);
+  --radius-sm: var(--radius-sm);
+  --radius-md: var(--radius-md);
+  --radius-lg: var(--radius-lg);
+  --radius-xl: var(--radius-xl);
+  --radius-2xl: var(--radius-2xl);
+  --radius-full: var(--radius-full);
+
+  --font-sans: var(--font-sans);
+  --font-mono: var(--font-mono);
+
+  --spacing-0: var(--space-0);
+  --spacing-1: var(--space-1);
+  --spacing-2: var(--space-2);
+  --spacing-3: var(--space-3);
+  --spacing-4: var(--space-4);
+  --spacing-5: var(--space-5);
+  --spacing-6: var(--space-6);
+  --spacing-7: var(--space-7);
+  --spacing-8: var(--space-8);
+  --spacing-9: var(--space-9);
+  --spacing-10: var(--space-10);
+
+  --shadow-sm: var(--shadow-sm);
+  --shadow-md: var(--shadow-md);
+  --shadow-lg: var(--shadow-lg);
+  --shadow-xl: var(--shadow-xl);
+
+  --default-transition-duration: var(--duration-short);
+  --default-transition-timing-function: var(--ease-standard);
+
+  --z-index-dropdown: var(--z-dropdown);
+  --z-index-sticky: var(--z-sticky);
+  --z-index-overlay: var(--z-overlay);
+  --z-index-modal: var(--z-modal);
+  --z-index-popover: var(--z-popover);
+  --z-index-toast: var(--z-toast);
+  --z-index-tooltip: var(--z-tooltip);
+}
+
+/* ---------- Typography utilities (fixed type scale) ---------- */
+@utility text-display {
+  font-size: var(--font-size-display);
+  line-height: var(--line-height-display);
+  font-weight: var(--font-weight-display);
+  letter-spacing: -0.02em;
+}
+@utility text-h1 {
+  font-size: var(--font-size-h1);
+  line-height: var(--line-height-h1);
+  font-weight: var(--font-weight-h1);
+  letter-spacing: -0.015em;
+}
+@utility text-h2 {
+  font-size: var(--font-size-h2);
+  line-height: var(--line-height-h2);
+  font-weight: var(--font-weight-h2);
+  letter-spacing: -0.01em;
+}
+@utility text-h3 {
+  font-size: var(--font-size-h3);
+  line-height: var(--line-height-h3);
+  font-weight: var(--font-weight-h3);
+}
+@utility text-title {
+  font-size: var(--font-size-title);
+  line-height: var(--line-height-title);
+  font-weight: var(--font-weight-title);
+}
+@utility text-body {
+  font-size: var(--font-size-body);
+  line-height: var(--line-height-body);
+  font-weight: var(--font-weight-body);
+}
+@utility text-caption {
+  font-size: var(--font-size-caption);
+  line-height: var(--line-height-caption);
+  font-weight: var(--font-weight-caption);
+  color: var(--muted-foreground);
+}
+/* Reserved exclusively for evidence artifacts — code, commit references,
+   transcript quotes (docs/02-brand-guidelines.md §8). Never used for
+   regular interface copy; that boundary IS the explainability boundary. */
+@utility text-code {
+  font-family: var(--font-mono);
+  font-size: var(--font-size-code);
+  line-height: var(--line-height-code);
+  font-weight: var(--font-weight-code);
+}
+
+@layer base {
+  * {
+    border-color: var(--color-border);
+  }
+
+  html {
+    font-family: var(--font-sans);
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+  }
+
+  body {
+    background-color: var(--color-background);
+    color: var(--color-foreground);
+    font-size: var(--font-size-body);
+    line-height: var(--line-height-body);
+  }
+
+  code,
+  kbd,
+  pre,
+  samp {
+    font-family: var(--font-mono);
+  }
+
+  :focus-visible {
+    outline: 2px solid var(--focus);
+    outline-offset: 2px;
+  }
+}
