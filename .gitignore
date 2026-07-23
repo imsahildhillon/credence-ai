@@ -148,3 +148,6 @@ vite.config.ts.timestamp-*
 # Monorepo / build tooling
 .turbo
 build/
+
+#claude
+.claude/
