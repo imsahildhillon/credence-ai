@@ -79,6 +79,54 @@ export type Database = {
           },
         ];
       };
+      analysis_errors: {
+        Row: {
+          analysis_id: string;
+          created_at: string;
+          id: string;
+          kind: string;
+          message: string;
+          repository_id: string | null;
+          retryable: boolean;
+          stage: string;
+        };
+        Insert: {
+          analysis_id: string;
+          created_at?: string;
+          id?: string;
+          kind: string;
+          message: string;
+          repository_id?: string | null;
+          retryable?: boolean;
+          stage: string;
+        };
+        Update: {
+          analysis_id?: string;
+          created_at?: string;
+          id?: string;
+          kind?: string;
+          message?: string;
+          repository_id?: string | null;
+          retryable?: boolean;
+          stage?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: 'analysis_errors_analysis_id_fkey';
+            columns: ['analysis_id'];
+            isOneToOne: false;
+            referencedRelation: 'analyses';
+            referencedColumns: ['id'];
+          },
+          {
+            foreignKeyName: 'analysis_errors_repository_id_fkey';
+            columns: ['repository_id'];
+            isOneToOne: false;
+            referencedRelation: 'repositories';
+            referencedColumns: ['id'];
+          },
+        ];
+      };
       analysis_repositories: {
         Row: {
           analysis_id: string;
@@ -289,39 +337,54 @@ export type Database = {
       };
       evidence_items: {
         Row: {
+          author_login: string | null;
+          confidence: number;
           created_at: string;
           evidence_type: Database['public']['Enums']['evidence_type'];
           external_url: string | null;
+          github_id: string | null;
           id: string;
-          metadata: Json;
+          occurred_at: string | null;
+          payload: Json;
           profile_id: string;
           repository_id: string | null;
+          source_type: Database['public']['Enums']['evidence_source_type'] | null;
           storage_path: string | null;
           title: string;
           updated_at: string;
           verified: boolean;
         };
         Insert: {
+          author_login?: string | null;
+          confidence?: number;
           created_at?: string;
           evidence_type: Database['public']['Enums']['evidence_type'];
           external_url?: string | null;
+          github_id?: string | null;
           id?: string;
-          metadata?: Json;
+          occurred_at?: string | null;
+          payload?: Json;
           profile_id: string;
           repository_id?: string | null;
+          source_type?: Database['public']['Enums']['evidence_source_type'] | null;
           storage_path?: string | null;
           title: string;
           updated_at?: string;
           verified?: boolean;
         };
         Update: {
+          author_login?: string | null;
+          confidence?: number;
           created_at?: string;
           evidence_type?: Database['public']['Enums']['evidence_type'];
           external_url?: string | null;
+          github_id?: string | null;
           id?: string;
-          metadata?: Json;
+          occurred_at?: string | null;
+          payload?: Json;
           profile_id?: string;
           repository_id?: string | null;
+          source_type?: Database['public']['Enums']['evidence_source_type'] | null;
           storage_path?: string | null;
           title?: string;
           updated_at?: string;
@@ -786,6 +849,7 @@ export type Database = {
       [_ in never]: never;
     };
     Functions: {
+      claim_next_queued_analysis: { Args: never; Returns: string };
       current_consent: {
         Args: {
           p_profile_id: string;
@@ -810,6 +874,8 @@ export type Database = {
       confidence_level: 'high' | 'moderate' | 'preliminary';
       consent_type: 'analysis' | 'visibility';
       contact_request_status: 'pending' | 'accepted' | 'declined' | 'expired';
+      evidence_source_type:
+        'repository' | 'commit' | 'pull_request' | 'review' | 'issue' | 'release' | 'contributor';
       evidence_type: 'github_repository' | 'resume_claim' | 'certificate' | 'deployment_url';
       user_role: 'student' | 'recruiter' | 'admin';
     };
@@ -938,6 +1004,15 @@ export const Constants = {
       confidence_level: ['high', 'moderate', 'preliminary'],
       consent_type: ['analysis', 'visibility'],
       contact_request_status: ['pending', 'accepted', 'declined', 'expired'],
+      evidence_source_type: [
+        'repository',
+        'commit',
+        'pull_request',
+        'review',
+        'issue',
+        'release',
+        'contributor',
+      ],
       evidence_type: ['github_repository', 'resume_claim', 'certificate', 'deployment_url'],
       user_role: ['student', 'recruiter', 'admin'],
     },

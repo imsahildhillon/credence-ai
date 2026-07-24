@@ -150,6 +150,67 @@ A queued job used to mean "analyze whatever `repositories.included` says *when t
 
 **The analysis worker MUST read `analysis_repositories` (via `listAnalysisSnapshot()`), never `repositories.included`.** The `/analysis` screen already renders the snapshot, so what a student sees is exactly what will run. Editing the selection afterwards affects only *future* runs.
 
+### Job states
+
+`queued → processing → completed | partial | failed`, with `started_at` and `completed_at` persisted at each transition so a stalled job is detectable (CLAUDE.md §19.6 — a job never sits in `processing` limbo silently).
+
+| State | Meaning |
+|---|---|
+| `queued` | Enqueued with its snapshot; no work started. |
+| `processing` | Claimed by a worker (`started_at` set). |
+| `completed` | Every repository ingested with no failures. |
+| `partial` | Evidence was produced, but at least one repository/stage failed — see `analysis_errors`. |
+| `failed` | No evidence produced (no snapshot, no usable credential, or every repository failed). |
+
+`claim_next_queued_analysis()` performs the `queued → processing` transition atomically using `FOR UPDATE SKIP LOCKED`, so multiple workers never claim the same job.
+
+## Evidence Pipeline
+
+Implements [ADR-006](adr/ADR-006-evidence-normalization-and-idempotency.md). Module: `apps/web/src/features/evidence/`.
+
+```
+analysis job → analysis_repositories (immutable snapshot)
+             → GitHub REST (bounded, rate-limit aware)
+             → raw engineering signals
+             → normalization (pure mappers)
+             → evidence_items (idempotent upsert)
+```
+
+### Layering
+
+| File | Responsibility |
+|---|---|
+| `client.ts` | The only module that speaks HTTP to GitHub for evidence; caps, rate-limit headroom, typed errors. |
+| `mapper.ts` | Pure normalization: GitHub shape → `NormalizedEvidence` → row. |
+| `service.ts` | Per-repository collection; runs each stage guarded so one failure doesn't lose the rest. |
+| `queries.ts` | Service-role data access (the worker has no session). |
+| `worker.ts` | Job lifecycle, per-repository isolation, terminal status. |
+| `env.ts` | Worker trigger secret. |
+
+### Normalization strategy
+
+**No raw GitHub object is persisted or exposed.** Every signal becomes one `evidence_items` row with a uniform vocabulary: `source_type`, `github_id`, `title`, `occurred_at`, `author_login`, `external_url` (the raw_url), `payload`, `confidence`. `evidence_type` stays the coarse category; the new `source_type` enum names the specific signal (`repository`, `commit`, `pull_request`, `review`, `issue`, `release`, `contributor`).
+
+Payloads keep only fields with engineering meaning; READMEs are stored as bounded excerpts, never mirrors (PRD §12.6). Two honesty rules: unfetched metrics are `null` (never `0`), and `payload.detailFetched` records whether the enrichment call happened — so "no additions" is distinguishable from "additions unknown".
+
+`confidence` here is **ingestion fidelity** (1.0 = read directly from the API) and is deliberately distinct from the `confidence_level` enum, which is *assessment* confidence and the only confidence ever shown to a user.
+
+### Idempotency strategy
+
+Unique key `(repository_id, source_type, github_id)`, persisted with a single batched **upsert**. `github_id` is `text` so it holds a numeric GitHub id *or* a commit **SHA** — a commit's only stable identity. Running the same analysis twice refreshes evidence in place and can never duplicate it.
+
+### Retry strategy
+
+Because ingestion is idempotent, **retry is at the job level** — re-running a `partial`/`failed` analysis is always safe, with no partial write to reconcile. Failures are recorded per repository/stage in `analysis_errors` with a `retryable` flag (rate limit, network, reconnected credential → retryable; repository genuinely gone → not). A revoked token is raised once, marks the credential revoked, and skips the remaining repositories with an explicit reason instead of hammering GitHub. There is no automatic backoff scheduler yet; the trigger endpoint is invoked externally.
+
+### Performance
+
+Every list is capped and detail fan-out is bounded (20 commits, 10 PRs per repository), detail calls run concurrently via `Promise.allSettled`, and the client refuses to start a call once GitHub's reported remaining budget drops below a floor — leaving headroom for interactive imports rather than starving them.
+
+### Security
+
+All GitHub communication is server-side. The worker runs without a user session, so safety comes from *what it reads*: only rows reachable from an analysis snapshot, which was ownership-validated in SQL when created (ADR-005). **No repository identifier ever originates from a client.** The trigger endpoint is machine-to-machine (constant-time bearer comparison against `WORKER_TRIGGER_SECRET`) and is deliberately not callable by a signed-in student — a student can enqueue work, never drive the worker.
+
 ## Async pipeline
 
 Redis + BullMQ remain the job spine for AI analysis and other slow/expensive work (CLAUDE.md §14) — Supabase's role is persistence, auth, and storage, not job orchestration. Job processors read/write through the same `@supabase/supabase-js` clients as request handlers, using the service-role client only where a job genuinely needs to act outside any single user's session.
