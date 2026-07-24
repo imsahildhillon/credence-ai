@@ -170,20 +170,32 @@ export async function processAnalysis(analysisId: string): Promise<AnalysisRunSu
     }
   }
 
-  // Honest terminal state: complete only when nothing failed; partial when we
-  // produced evidence but not all of it; failed when we produced none.
-  const status = failureCount === 0 ? 'completed' : evidenceUpserted > 0 ? 'partial' : 'failed';
+  // Ingestion is a stage, not the whole analysis. If it produced evidence,
+  // the job stays `processing` and hands off to the assessment stage, which
+  // owns the terminal `completed`/`partial` state and the summary,
+  // confidence, model, and pipeline version a completed analysis is required
+  // by CHECK constraint to carry. Marking `completed` here would both violate
+  // that constraint and claim a finished report before anything had been
+  // assessed. Producing no evidence at all is genuinely terminal.
+  if (evidenceUpserted === 0) {
+    const message =
+      failureCount === 0
+        ? 'We could not find any analyzable activity in the repositories you selected.'
+        : `Analyzed ${repositoriesProcessed} of ${snapshot.length} repositories; ${failureCount} issue(s) recorded, and no evidence could be collected.`;
+    await finishAnalysis(analysisId, 'failed', message);
 
-  const summaryMessage =
-    failureCount === 0
-      ? null
-      : `Analyzed ${repositoriesProcessed} of ${snapshot.length} repositories; ${failureCount} issue(s) recorded.`;
-
-  await finishAnalysis(analysisId, status, summaryMessage);
+    return {
+      analysisId,
+      status: 'failed',
+      repositoriesProcessed,
+      evidenceUpserted,
+      failures: failureCount,
+    };
+  }
 
   return {
     analysisId,
-    status,
+    status: 'processing',
     repositoriesProcessed,
     evidenceUpserted,
     failures: failureCount,

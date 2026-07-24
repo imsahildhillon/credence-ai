@@ -154,13 +154,15 @@ A queued job used to mean "analyze whatever `repositories.included` says *when t
 
 `queued → processing → completed | partial | failed`, with `started_at` and `completed_at` persisted at each transition so a stalled job is detectable (CLAUDE.md §19.6 — a job never sits in `processing` limbo silently).
 
+An analysis spans **two stages**: evidence ingestion, then skill assessment. Ingestion never marks a job `completed` — it hands off in `processing`, and the assessment stage owns the terminal state along with the `summary`, `confidence`, `model`, `pipeline_version`, and `prompt_version` a completed analysis is required by CHECK constraint to carry.
+
 | State | Meaning |
 |---|---|
 | `queued` | Enqueued with its snapshot; no work started. |
-| `processing` | Claimed by a worker (`started_at` set). |
-| `completed` | Every repository ingested with no failures. |
-| `partial` | Evidence was produced, but at least one repository/stage failed — see `analysis_errors`. |
-| `failed` | No evidence produced (no snapshot, no usable credential, or every repository failed). |
+| `processing` | Claimed by a worker (`started_at` set), **or** ingested and awaiting assessment. |
+| `completed` | Assessed end to end with nothing excluded. |
+| `partial` | Assessed, but something was excluded — an unreadable repository, a rejected citation, a refused row. See `analysis_errors`. |
+| `failed` | Ingestion produced no evidence, or assessment could not produce a claim we can stand behind. Ingested evidence is retained either way. |
 
 `claim_next_queued_analysis()` performs the `queued → processing` transition atomically using `FOR UPDATE SKIP LOCKED`, so multiple workers never claim the same job.
 
@@ -210,6 +212,61 @@ Every list is capped and detail fan-out is bounded (20 commits, 10 PRs per repos
 ### Security
 
 All GitHub communication is server-side. The worker runs without a user session, so safety comes from *what it reads*: only rows reachable from an analysis snapshot, which was ownership-validated in SQL when created (ADR-005). **No repository identifier ever originates from a client.** The trigger endpoint is machine-to-machine (constant-time bearer comparison against `WORKER_TRIGGER_SECRET`) and is deliberately not callable by a signed-in student — a student can enqueue work, never drive the worker.
+
+## Skill Assessment Engine
+
+Implements [ADR-007](adr/ADR-007-evidence-grounded-skill-assessment.md). Module: `apps/web/src/features/analysis/`; Claude access via `apps/web/src/lib/ai/`.
+
+```
+evidence_items (stored, immutable in practice)
+             → aggregation into 11 engineering dimensions (pure, PII-free)
+             → Claude (structured outputs, adaptive thinking)
+             → citation validation (application, then SQL)
+             → skill_assessments + assessment_evidence (one transaction)
+```
+
+### Why the LLM never consumes GitHub directly
+
+The model's entire input is the aggregator's structured summary. It never sees a GitHub API response, a database row, or the candidate's identity. Three reasons, in priority order:
+
+1. **Explainability survives the source.** A repository can be renamed, made private, or deleted; a re-fetch would then produce a different answer or none at all. Stored evidence is stable and addressable by id, so a claim made today can be re-explained from its citations years from now. An assessment grounded in a live API call is only explainable for as long as that call keeps working.
+2. **Reproducibility.** The same analysis re-run over the same evidence with the same `prompt_version` and `model` is reproducible. Re-fetching from a moving upstream is not.
+3. **Trust boundary.** READMEs, commit messages, and issue titles are candidate-supplied and therefore untrusted (CLAUDE.md §18.4). They reach the model only after normalization, in a fixed shape we control — a prompt-injection attempt arrives as data to assess, not as an instruction to follow.
+
+### Two vocabularies
+
+**Dimensions** (`code_quality`, `collaboration`, `architecture`, `testing`, `delivery`, `ownership`, `documentation`, `debugging`, `performance`, `security`, `leadership`) group *evidence*. The fixed 12-entry **`skills` taxonomy** defines what may be *assessed* (PRD FR-5.1 — no free-form skills). Each taxonomy skill declares the dimensions that inform it.
+
+Routing is structural where possible (a path like `src/foo.test.ts` is a fact about the change; a commit message is the author's description of it). Routing decides which evidence is read under which heading — never what the assessment says. **A skill with no evidence in any of its dimensions is not sent for assessment at all**, because asking a model to judge nothing is what produces invented findings.
+
+### Anti-hallucination
+
+Validated twice, and the database has the final say:
+
+- `mapper.ts` checks every cited id against the set actually supplied and drops any assessment citing an invalid id **whole** — keeping its valid citations would persist a claim whose stated grounds are partly fiction. Rejections are recorded in `analysis_errors` as `unverifiable_citation`.
+- `persist_skill_assessment(...)` re-derives the profile from the analysis, resolves the skill slug against the taxonomy, and refuses evidence ids that do not exist or belong to another profile. It writes the assessment and its `assessment_evidence` links in one transaction, so the database can never hold an orphaned claim (CLAUDE.md §15.2). Granted to `service_role` only.
+
+### Confidence
+
+The model reports confidence as a **0–1 number**, because a graded self-report calibrates better than asking it to pick a word. That number never leaves `mapper.ts`: it is banded into `confidence_level` (`high | moderate | preliminary`) and additionally **capped by citation count** — under 3 citations can only be `preliminary`, under 8 only `moderate`. Calibration is ours to enforce, not the model's to self-report. The analysis-level confidence is the weakest band present.
+
+No numeric score is stored or rendered anywhere (PRD FR-5.2, Brand Guidelines §16.3).
+
+### Failure behavior
+
+A refusal, timeout, truncation, or schema violation marks the analysis `failed`, records a diagnostic, and **leaves ingested evidence untouched** — retry is cheap and never re-ingests. Assessments are append-only: a re-run appends a new version and sets `superseded_by` on the prior row.
+
+### Provenance
+
+Every run writes `model`, `pipeline_version` (`assessment-v1`), and `prompt_version` (`skill-assessment-v1`) to the `analyses` row its assessments reference, so any historical assessment can be reproduced (CLAUDE.md §14.4).
+
+### Trigger
+
+`POST /api/v1/analyses/assess` with the same machine-to-machine bearer secret as ingestion, deliberately separate from `/analyses/process`: ingestion is network-bound and cheap to retry, assessment is model-bound and costs real money. A transient GitHub failure must never re-run a paid assessment.
+
+### Known gap
+
+The golden-dataset eval suite (CLAUDE.md §17.9) does not exist yet. Prompt and model changes therefore ship without calibration, evidence-grounding, or fairness regression evidence. This is a release gate that is currently missing, not an optional extra.
 
 ## Async pipeline
 

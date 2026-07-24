@@ -17,7 +17,8 @@ analysis job → analysis_repositories (snapshot) → GitHub → normalization �
 
 - **No raw GitHub object is persisted or exposed.** Everything becomes an `evidence_items` row with one vocabulary (`source_type`, `github_id`, `occurred_at`, `author_login`, `external_url`, `payload`, `confidence`).
 - **Ingestion is idempotent.** Upsert on `(repository_id, source_type, github_id)`; `github_id` holds a numeric id or a commit SHA. Re-running an analysis refreshes, never duplicates — which is what makes job-level retry safe.
-- **One repository failing never fails the run.** Stage- and repository-level isolation; failures land in `analysis_errors`, and the job ends `partial` rather than pretending completeness.
+- **One repository failing never fails the run.** Stage- and repository-level isolation; failures land in `analysis_errors` for the assessment stage to account for honestly.
+- **Ingestion is a stage, not the whole analysis.** A run that produced evidence stays `processing` and hands off to [`features/analysis`](../analysis/README.md), which owns the terminal `completed`/`partial` state and the summary/confidence/model/version a completed analysis must carry. Producing no evidence at all is terminal `failed`.
 - **Unknown ≠ zero.** Unfetched metrics are `null`; `payload.detailFetched` says whether enrichment ran.
 - **The worker reads the snapshot, never `repositories.included`** (ADR-005), and no repository identifier ever comes from a client.
 - `confidence` here is ingestion fidelity (1.0), _not_ the `confidence_level` assessment enum.

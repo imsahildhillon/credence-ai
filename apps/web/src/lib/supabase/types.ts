@@ -706,11 +706,13 @@ export type Database = {
           analysis_id: string;
           confidence: Database['public']['Enums']['confidence_level'];
           created_at: string;
+          growth_areas: string[];
           id: string;
           level: Database['public']['Enums']['assessment_level'];
           profile_id: string;
           reasoning: string;
           skill_id: string;
+          strengths: string[];
           superseded_by: string | null;
           version: number;
         };
@@ -718,11 +720,13 @@ export type Database = {
           analysis_id: string;
           confidence: Database['public']['Enums']['confidence_level'];
           created_at?: string;
+          growth_areas?: string[];
           id?: string;
           level: Database['public']['Enums']['assessment_level'];
           profile_id: string;
           reasoning: string;
           skill_id: string;
+          strengths?: string[];
           superseded_by?: string | null;
           version: number;
         };
@@ -730,11 +734,13 @@ export type Database = {
           analysis_id?: string;
           confidence?: Database['public']['Enums']['confidence_level'];
           created_at?: string;
+          growth_areas?: string[];
           id?: string;
           level?: Database['public']['Enums']['assessment_level'];
           profile_id?: string;
           reasoning?: string;
           skill_id?: string;
+          strengths?: string[];
           superseded_by?: string | null;
           version?: number;
         };
@@ -867,6 +873,19 @@ export type Database = {
         Returns: string;
       };
       is_recruiter_visible: { Args: { p_profile_id: string }; Returns: boolean };
+      persist_skill_assessment: {
+        Args: {
+          p_analysis_id: string;
+          p_confidence: Database['public']['Enums']['confidence_level'];
+          p_evidence_item_ids: string[];
+          p_growth_areas: string[];
+          p_level: Database['public']['Enums']['assessment_level'];
+          p_reasoning: string;
+          p_skill_slug: string;
+          p_strengths: string[];
+        };
+        Returns: string;
+      };
     };
     Enums: {
       analysis_status: 'queued' | 'processing' | 'completed' | 'failed' | 'partial';
