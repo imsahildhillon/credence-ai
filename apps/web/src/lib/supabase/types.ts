@@ -79,6 +79,60 @@ export type Database = {
           },
         ];
       };
+      analysis_repositories: {
+        Row: {
+          analysis_id: string;
+          commit_sha: string | null;
+          created_at: string;
+          default_branch: string | null;
+          full_name: string;
+          github_repo_id: number;
+          id: string;
+          is_private: boolean;
+          primary_language: string | null;
+          repository_id: string;
+        };
+        Insert: {
+          analysis_id: string;
+          commit_sha?: string | null;
+          created_at?: string;
+          default_branch?: string | null;
+          full_name: string;
+          github_repo_id: number;
+          id?: string;
+          is_private: boolean;
+          primary_language?: string | null;
+          repository_id: string;
+        };
+        Update: {
+          analysis_id?: string;
+          commit_sha?: string | null;
+          created_at?: string;
+          default_branch?: string | null;
+          full_name?: string;
+          github_repo_id?: number;
+          id?: string;
+          is_private?: boolean;
+          primary_language?: string | null;
+          repository_id?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: 'analysis_repositories_analysis_id_fkey';
+            columns: ['analysis_id'];
+            isOneToOne: false;
+            referencedRelation: 'analyses';
+            referencedColumns: ['id'];
+          },
+          {
+            foreignKeyName: 'analysis_repositories_repository_id_fkey';
+            columns: ['repository_id'];
+            isOneToOne: false;
+            referencedRelation: 'repositories';
+            referencedColumns: ['id'];
+          },
+        ];
+      };
       assessment_evidence: {
         Row: {
           assessment_id: string;
@@ -331,6 +385,44 @@ export type Database = {
           },
         ];
       };
+      github_credentials: {
+        Row: {
+          access_token_encrypted: string;
+          captured_at: string;
+          created_at: string;
+          github_account_id: string;
+          revoked_at: string | null;
+          token_scopes: string | null;
+          updated_at: string;
+        };
+        Insert: {
+          access_token_encrypted: string;
+          captured_at?: string;
+          created_at?: string;
+          github_account_id: string;
+          revoked_at?: string | null;
+          token_scopes?: string | null;
+          updated_at?: string;
+        };
+        Update: {
+          access_token_encrypted?: string;
+          captured_at?: string;
+          created_at?: string;
+          github_account_id?: string;
+          revoked_at?: string | null;
+          token_scopes?: string | null;
+          updated_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: 'github_credentials_github_account_id_fkey';
+            columns: ['github_account_id'];
+            isOneToOne: true;
+            referencedRelation: 'github_accounts';
+            referencedColumns: ['id'];
+          },
+        ];
+      };
       organizations: {
         Row: {
           created_at: string;
@@ -436,6 +528,7 @@ export type Database = {
       repositories: {
         Row: {
           created_at: string;
+          default_branch: string | null;
           deployed_url: string | null;
           deployed_url_reachable: boolean | null;
           description: string | null;
@@ -455,6 +548,7 @@ export type Database = {
         };
         Insert: {
           created_at?: string;
+          default_branch?: string | null;
           deployed_url?: string | null;
           deployed_url_reachable?: boolean | null;
           description?: string | null;
@@ -474,6 +568,7 @@ export type Database = {
         };
         Update: {
           created_at?: string;
+          default_branch?: string | null;
           deployed_url?: string | null;
           deployed_url_reachable?: boolean | null;
           description?: string | null;
@@ -702,6 +797,10 @@ export type Database = {
       current_user_role: {
         Args: never;
         Returns: Database['public']['Enums']['user_role'];
+      };
+      enqueue_analysis_with_snapshot: {
+        Args: { p_commit_shas?: Json };
+        Returns: string;
       };
       is_recruiter_visible: { Args: { p_profile_id: string }; Returns: boolean };
     };

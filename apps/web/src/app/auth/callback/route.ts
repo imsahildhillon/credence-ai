@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 
 import { getOrCreateProfile, toSafeRedirectPath } from '@/features/auth/server/service';
+import { captureGithubOAuthCredentials } from '@/features/github/account';
 import { createClient } from '@/lib/supabase/server';
 
 /**
@@ -8,10 +9,16 @@ import { createClient } from '@/lib/supabase/server';
  * to exchange for a session. GitHub is the only public identity path
  * (ADR-003); no other provider or email flow reaches this route.
  *
- * On success, bootstraps the profile (self-healing — see
- * `getOrCreateProfile`, which always assigns role=student server-side)
- * before redirecting on, so the very next page render never hits a
- * "missing profile" race.
+ * On success it does two things, both best-effort and neither of which
+ * changes how authentication itself works:
+ *
+ *  1. Bootstraps the profile (self-healing — see `getOrCreateProfile`, which
+ *     always assigns role=student server-side), so the next page render
+ *     never hits a "missing profile" race.
+ *  2. Captures the GitHub access token this exchange produced and persists it
+ *     encrypted (ADR-004). This is the *only* moment the provider token is
+ *     available; without capturing it here, repository access would die with
+ *     the session.
  */
 export async function GET(request: Request) {
   const { searchParams, origin } = new URL(request.url);
@@ -32,6 +39,15 @@ export async function GET(request: Request) {
         // transient failure at this exact moment doesn't strand the user;
         // it just means one extra render before the profile appears.
       }
+
+      try {
+        await captureGithubOAuthCredentials(data.user, data.session.provider_token);
+      } catch {
+        // Never break sign-in over credential capture. If this fails the app
+        // falls back to the session's provider_token for this session and
+        // re-attempts persistence on the next GitHub call.
+      }
+
       return NextResponse.redirect(`${origin}${next}`);
     }
 

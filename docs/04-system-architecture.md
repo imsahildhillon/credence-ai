@@ -96,6 +96,60 @@ Bootstrap is **idempotent, transactional, and entirely server-side**, and always
 
 Recruiter access is **invitation-only and not yet implemented**. `/recruiter-access` is a public placeholder (invitation-only notice, "coming soon", placeholder contact) that creates no account. The intended flow, when built (PRD FR-1.3): an operator issues a single-use, 7-day invitation via `supabase.auth.admin.inviteUserByEmail(email, { data: … })` (service-role) with the organization/workspace seeded in `organizations`/`recruiters`; the invited recruiter completes sign-in through the invite link. Because role is set by the *inviter* (server-side, service-role) and never by the recruiter, this stays consistent with the server-authoritative model — the invitee has no self-asserted role at any point.
 
+## GitHub Integration & Credential Lifecycle
+
+Implements [ADR-004](adr/ADR-004-durable-github-credentials.md). Module: `apps/web/src/features/github/`.
+
+### Layering
+
+| File | Responsibility |
+|---|---|
+| `client.ts` | The only module that speaks HTTP to GitHub. Takes a bearer token as an argument; pagination, rate-limit detection, typed `GithubError`s. |
+| `service.ts` | Token resolution, revocation detection, and API orchestration. Never returns a token to its callers. |
+| `credentials.ts` | Encrypted read/write of stored tokens (service-role only). |
+| `account.ts` | Links a Supabase identity to a `github_accounts` row; captures credentials at the OAuth callback. |
+| `queries.ts` | RLS-scoped reads (repositories, snapshots). |
+| `server-actions.ts` | The app boundary: authenticate → validate ownership → delegate. |
+| `repository-mapper.ts` | Pure GitHub ↔ row ↔ view-model mapping. |
+
+### Why tokens are persisted
+
+Repository access previously used the Supabase session's `provider_token`, which Supabase does not persist and drops on token refresh — so imports worked right after login and then silently stopped. Tokens are now captured once, at the OAuth callback, and stored encrypted.
+
+### Credential lifecycle
+
+1. **Capture** — `app/auth/callback/route.ts` → `captureGithubOAuthCredentials()` right after `exchangeCodeForSession()`, the only moment the provider token exists. Best-effort: a failure never breaks sign-in.
+2. **Store** — AES-256-GCM envelope (`v1.<iv>.<authTag>.<ciphertext>`) in `github_credentials`. That table has **RLS enabled with zero policies** and grants revoked from `anon`/`authenticated`; only the service-role client can touch it. The encryption key (`GITHUB_TOKEN_ENCRYPTION_KEY`) lives only in the environment, so a database dump alone yields nothing usable.
+3. **Use** — `service.ts` resolves: stored credential → session `provider_token` (persisting it opportunistically, so the system self-heals into the durable path) → `token_unavailable`. The plaintext token is passed only to `client.ts`; it is never returned from an exported function, never placed in a prop, never logged.
+4. **Revoke** — `withGithubToken()` wraps every GitHub call; a `401` sets `revoked_at`. A revoked credential reads as absent, so we stop retrying a dead token.
+5. **Reconnect** — `requiresGithubReconnect(kind)` drives a "Reconnect GitHub" action to `/login?next=…`. Re-authorizing captures a fresh token and clears `revoked_at`.
+
+**Degradation:** if credential storage is unavailable (e.g. `SUPABASE_SERVICE_ROLE_KEY` unset), the app falls back to session tokens — i.e. exactly the previous behavior — rather than failing.
+
+## Analysis Lifecycle & Snapshots
+
+Implements [ADR-005](adr/ADR-005-immutable-analysis-snapshots.md).
+
+### Why snapshots exist
+
+A queued job used to mean "analyze whatever `repositories.included` says *when the worker runs*". Between enqueue and execution the student can change their selection and a re-import can rewrite repository metadata — so a job could analyze a different set than the one that was reviewed, and a historical assessment could never be explained against its actual inputs. That breaks CLAUDE.md §14.4 (versioned, auditable pipeline) and §15.2 (structural provenance). A job must be a complete, self-contained definition of work.
+
+### Enqueue → snapshot
+
+1. `startAnalysisAction` validates the session and loads the student's selected repository refs.
+2. `resolveHeadCommitShas()` best-effort pins each repository's HEAD commit (bounded to 25 lookups). Total by design: GitHub unreachable / rate-limited / token revoked yields null SHAs rather than blocking the enqueue.
+3. `enqueue_analysis_with_snapshot()` (SECURITY DEFINER) creates the `analyses` row **and** its `analysis_repositories` rows in one transaction. The snapshot is built from a query joined through `github_accounts` to `auth.uid()`, so repository ownership is validated in SQL by construction; a forged repository id in the SHA map is ignored rather than injected. An already-active job is reused instead of stacking duplicates.
+
+### Snapshot guarantees
+
+- Preserves `repository_id`, `github_repo_id`, `full_name`, `default_branch`, `is_private`, `primary_language`, `commit_sha`.
+- **Immutable**: a `BEFORE UPDATE` trigger raises unconditionally, so not even the service-role pipeline can alter it. `DELETE` remains possible only so account deletion can cascade (PRD §12.5).
+- `commit_sha` null means "analyze the latest commit at execution time"; non-null pins an exact commit.
+
+### Worker contract
+
+**The analysis worker MUST read `analysis_repositories` (via `listAnalysisSnapshot()`), never `repositories.included`.** The `/analysis` screen already renders the snapshot, so what a student sees is exactly what will run. Editing the selection afterwards affects only *future* runs.
+
 ## Async pipeline
 
 Redis + BullMQ remain the job spine for AI analysis and other slow/expensive work (CLAUDE.md §14) — Supabase's role is persistence, auth, and storage, not job orchestration. Job processors read/write through the same `@supabase/supabase-js` clients as request handlers, using the service-role client only where a job genuinely needs to act outside any single user's session.

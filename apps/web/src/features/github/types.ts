@@ -25,6 +25,12 @@ export interface GithubApiRepository {
   readonly stargazers_count: number;
   readonly updated_at: string | null;
   readonly html_url: string;
+  readonly default_branch: string | null;
+}
+
+/** `GET /repos/{owner}/{repo}/commits/{ref}` — only the field we need. */
+export interface GithubApiCommit {
+  readonly sha: string;
 }
 
 /** Rows/inserts for the tables this feature owns, named for readability. */
@@ -32,6 +38,7 @@ export type RepositoryRow = Database['public']['Tables']['repositories']['Row'];
 export type RepositoryInsert = Database['public']['Tables']['repositories']['Insert'];
 export type GithubAccountRow = Database['public']['Tables']['github_accounts']['Row'];
 export type AnalysisRow = Database['public']['Tables']['analyses']['Row'];
+export type AnalysisRepositoryRow = Database['public']['Tables']['analysis_repositories']['Row'];
 
 /**
  * The view model the UI renders — derived from a persisted `RepositoryRow`,
@@ -54,12 +61,42 @@ export interface RepositorySummary {
   readonly included: boolean;
 }
 
+/** Minimal repository reference used to resolve a HEAD commit before snapshotting. */
+export interface RepositoryRef {
+  readonly id: string;
+  readonly fullName: string;
+  readonly defaultBranch: string | null;
+}
+
+/**
+ * One row of an analysis's immutable repository snapshot — what the worker
+ * will analyze, frozen at enqueue time (never `repositories.included`).
+ */
+export interface AnalysisSnapshotItem {
+  readonly repositoryId: string;
+  readonly githubRepoId: number;
+  readonly name: string;
+  readonly fullName: string;
+  readonly defaultBranch: string | null;
+  readonly visibility: 'public' | 'private';
+  readonly primaryLanguage: string | null;
+  readonly commitSha: string | null;
+}
+
 /**
  * Why a GitHub call failed, in product terms — each kind maps to a distinct
  * designed UI state (CLAUDE.md §19.1: expected failures are modeled values).
  */
 export type GithubErrorKind =
   'token_unavailable' | 'unauthorized' | 'rate_limited' | 'not_found' | 'network' | 'unknown';
+
+/**
+ * Whether a failure means the student must re-authorize GitHub (as opposed
+ * to simply retrying). Drives the "Reconnect GitHub" affordance.
+ */
+export function requiresGithubReconnect(kind: GithubErrorKind): boolean {
+  return kind === 'token_unavailable' || kind === 'unauthorized';
+}
 
 export class GithubError extends Error {
   readonly kind: GithubErrorKind;

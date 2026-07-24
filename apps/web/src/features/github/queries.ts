@@ -3,8 +3,14 @@ import 'server-only';
 import { normalizeSupabaseError } from '@/lib/supabase/errors';
 import { createClient } from '@/lib/supabase/server';
 
-import { toRepositorySummary } from './repository-mapper';
-import type { AnalysisRow, GithubAccountRow, RepositorySummary } from './types';
+import { toAnalysisSnapshotItem, toRepositorySummary } from './repository-mapper';
+import type {
+  AnalysisRow,
+  AnalysisSnapshotItem,
+  GithubAccountRow,
+  RepositoryRef,
+  RepositorySummary,
+} from './types';
 
 /**
  * Read-side data access for the onboarding feature. Every query runs
@@ -39,17 +45,45 @@ export async function listRepositorySummaries(
   return (data ?? []).map(toRepositorySummary);
 }
 
-export async function countSelectedRepositories(githubAccountId: string): Promise<number> {
+/**
+ * Selected repositories reduced to what snapshot creation needs (id + the
+ * branch to resolve a HEAD commit against).
+ */
+export async function listSelectedRepositoryRefs(
+  githubAccountId: string,
+): Promise<RepositoryRef[]> {
   const supabase = await createClient();
-  const { count, error } = await supabase
+  const { data, error } = await supabase
     .from('repositories')
-    .select('*', { count: 'exact', head: true })
+    .select('id, full_name, default_branch')
     .eq('github_account_id', githubAccountId)
     .eq('included', true);
   if (error) {
     throw normalizeSupabaseError(error);
   }
-  return count ?? 0;
+  return (data ?? []).map((row) => ({
+    id: row.id,
+    fullName: row.full_name,
+    defaultBranch: row.default_branch,
+  }));
+}
+
+/**
+ * The immutable snapshot an analysis was queued against — what the worker
+ * will analyze. Read this, never `repositories.included`, when describing or
+ * executing a job.
+ */
+export async function listAnalysisSnapshot(analysisId: string): Promise<AnalysisSnapshotItem[]> {
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from('analysis_repositories')
+    .select('*')
+    .eq('analysis_id', analysisId)
+    .order('full_name', { ascending: true });
+  if (error) {
+    throw normalizeSupabaseError(error);
+  }
+  return (data ?? []).map(toAnalysisSnapshotItem);
 }
 
 export async function getLatestAnalysis(profileId: string): Promise<AnalysisRow | null> {

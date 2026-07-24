@@ -1,4 +1,6 @@
 import type {
+  AnalysisRepositoryRow,
+  AnalysisSnapshotItem,
   GithubApiRepository,
   RepositoryInsert,
   RepositoryRow,
@@ -39,6 +41,7 @@ export function toRepositoryInsert(
     stargazers_count: apiRepo.stargazers_count,
     github_updated_at: apiRepo.updated_at,
     html_url: apiRepo.html_url,
+    default_branch: apiRepo.default_branch,
     included,
   };
 }
@@ -64,6 +67,20 @@ export function toRepositorySummary(row: RepositoryRow): RepositorySummary {
     isFork: row.is_fork,
     isArchived: row.is_archived,
     included: row.included,
+  };
+}
+
+/** Snapshot row → view model. Mirrors `toRepositorySummary` for frozen data. */
+export function toAnalysisSnapshotItem(row: AnalysisRepositoryRow): AnalysisSnapshotItem {
+  return {
+    repositoryId: row.repository_id,
+    githubRepoId: row.github_repo_id,
+    name: shortRepoName(row.full_name),
+    fullName: row.full_name,
+    defaultBranch: row.default_branch,
+    visibility: row.is_private ? 'private' : 'public',
+    primaryLanguage: row.primary_language,
+    commitSha: row.commit_sha,
   };
 }
 

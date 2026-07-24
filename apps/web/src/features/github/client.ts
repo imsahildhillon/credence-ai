@@ -1,6 +1,11 @@
 import 'server-only';
 
-import { GithubError, type GithubApiRepository, type GithubApiUser } from './types';
+import {
+  GithubError,
+  type GithubApiCommit,
+  type GithubApiRepository,
+  type GithubApiUser,
+} from './types';
 
 /**
  * Low-level GitHub REST client. The *only* module that talks HTTP to
@@ -89,4 +94,25 @@ export async function fetchAllRepositories(token: string): Promise<GithubApiRepo
   }
 
   return all;
+}
+
+/**
+ * Resolves the HEAD commit SHA of `ref` (the repo's default branch). Pinning
+ * this into the analysis snapshot is what makes a run reproducible against an
+ * exact commit rather than "whatever main pointed at when the worker woke up".
+ *
+ * Throws `GithubError` like every other call here; the caller decides whether
+ * a missing SHA is fatal (for snapshots it is not — the column is nullable).
+ */
+export async function fetchRepositoryHeadSha(
+  token: string,
+  fullName: string,
+  ref: string | null,
+): Promise<string | null> {
+  const response = await githubGet(
+    `/repos/${fullName}/commits/${encodeURIComponent(ref ?? 'HEAD')}`,
+    token,
+  );
+  const commit = (await response.json()) as Partial<GithubApiCommit>;
+  return commit.sha ?? null;
 }

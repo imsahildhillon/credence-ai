@@ -16,11 +16,7 @@ import {
 } from '@/components/ui/card';
 import { getCurrentUser } from '@/features/auth/server/service';
 import { SubmitButton } from '@/features/github/components/SubmitButton';
-import {
-  countSelectedRepositories,
-  getGithubAccountForCurrentUser,
-  getLatestAnalysis,
-} from '@/features/github/queries';
+import { getLatestAnalysis, listAnalysisSnapshot } from '@/features/github/queries';
 import { connectGithubAction } from '@/features/github/server-actions';
 
 export const metadata: Metadata = { title: 'Your analysis — Credence AI' };
@@ -34,10 +30,13 @@ const STATUS_LABELS: Record<string, string> = {
 };
 
 /**
- * Post-onboarding holding screen. Shows the queued analysis job honestly —
- * no AI runs yet, so this is a truthful "we're preparing it" state, not a
- * fake progress bar (Brand Guidelines §12, CLAUDE.md §21.5). If no job
- * exists, routes the student back into onboarding.
+ * Post-onboarding holding screen. Shows the queued analysis honestly — no AI
+ * runs yet, so this is a truthful "we're preparing it" state, not a fake
+ * progress bar (Brand Guidelines §12, CLAUDE.md §21.5).
+ *
+ * It reads the job's **immutable snapshot**, not the student's current
+ * selection, so this screen always describes exactly what the queued run will
+ * analyze — even if the selection has been edited since.
  */
 export default async function AnalysisPage() {
   const user = await getCurrentUser();
@@ -63,9 +62,9 @@ export default async function AnalysisPage() {
     );
   }
 
-  const account = await getGithubAccountForCurrentUser();
-  const selectedCount = account ? await countSelectedRepositories(account.id) : 0;
+  const snapshot = await listAnalysisSnapshot(analysis.id);
   const isActive = analysis.status === 'queued' || analysis.status === 'processing';
+  const pinnedCount = snapshot.filter((item) => item.commitSha).length;
 
   return (
     <div className="mx-auto flex w-full max-w-xl flex-col gap-8">
@@ -77,8 +76,8 @@ export default async function AnalysisPage() {
           <div className="flex flex-col gap-1">
             <CardTitle>We&apos;re preparing your engineering profile.</CardTitle>
             <CardDescription>
-              {selectedCount > 0
-                ? `${selectedCount} repositor${selectedCount === 1 ? 'y is' : 'ies are'} queued for analysis.`
+              {snapshot.length > 0
+                ? `${snapshot.length} repositor${snapshot.length === 1 ? 'y is' : 'ies are'} queued for analysis.`
                 : 'Your analysis is queued.'}
             </CardDescription>
           </div>
@@ -86,12 +85,40 @@ export default async function AnalysisPage() {
             {STATUS_LABELS[analysis.status] ?? analysis.status}
           </Badge>
         </CardHeader>
-        <CardContent>
+        <CardContent className="flex flex-col gap-4">
           <p className="text-body">
             Your repositories are queued for analysis. This can take a little while — there&apos;s
             nothing else you need to do right now, and you can safely leave this page. Your report
             will appear here once it&apos;s ready.
           </p>
+
+          {snapshot.length > 0 ? (
+            <div className="flex flex-col gap-2">
+              <h2 className="text-caption font-medium">Included in this run</h2>
+              <ul className="flex flex-col divide-y rounded-lg border">
+                {snapshot.map((item) => (
+                  <li
+                    key={item.repositoryId}
+                    className="flex items-center justify-between gap-3 px-3 py-2"
+                  >
+                    <span className="text-caption truncate">{item.name}</span>
+                    {item.commitSha ? (
+                      // Monospace is reserved for raw evidence — a commit SHA
+                      // is exactly that (Brand Guidelines §8).
+                      <span className="text-caption font-mono">{item.commitSha.slice(0, 7)}</span>
+                    ) : (
+                      <span className="text-caption">latest commit</span>
+                    )}
+                  </li>
+                ))}
+              </ul>
+              <p className="text-caption">
+                {pinnedCount === snapshot.length
+                  ? 'This selection is locked in — editing your repositories later won’t change this run.'
+                  : 'This selection is locked in. Repositories without a pinned commit will be analyzed at their latest commit when the run starts.'}
+              </p>
+            </div>
+          ) : null}
         </CardContent>
         <CardFooter>
           <Button asChild variant="outline">

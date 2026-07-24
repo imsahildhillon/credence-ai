@@ -1,6 +1,7 @@
 'use client';
 
 import { FolderGit2 } from 'lucide-react';
+import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useState, useTransition } from 'react';
 
@@ -8,7 +9,7 @@ import { EmptyState } from '@/components/feedback/empty-state';
 import { ErrorState } from '@/components/feedback/error-state';
 import { Button } from '@/components/ui/button';
 import { importRepositoriesAction } from '@/features/github/server-actions';
-import type { ImportResult } from '@/features/github/types';
+import { requiresGithubReconnect, type ImportResult } from '@/features/github/types';
 
 /**
  * First-run state on the repositories screen: no repos imported yet. Kicks
@@ -32,14 +33,25 @@ export function RepositoryImportPrompt() {
   }
 
   if (result?.status === 'error') {
+    const needsReconnect = requiresGithubReconnect(result.kind);
     return (
       <ErrorState
-        title="We couldn't import your repositories"
+        title={
+          needsReconnect ? 'Reconnect GitHub to continue' : "We couldn't import your repositories"
+        }
         description={result.message}
         action={
-          <Button type="button" onClick={handleImport} loading={isPending}>
-            Try again
-          </Button>
+          needsReconnect ? (
+            <Button asChild>
+              <Link href={`/login?next=${encodeURIComponent('/onboarding/repositories')}`}>
+                Reconnect GitHub
+              </Link>
+            </Button>
+          ) : (
+            <Button type="button" onClick={handleImport} loading={isPending}>
+              Try again
+            </Button>
+          )
         }
       />
     );

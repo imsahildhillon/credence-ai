@@ -14,7 +14,11 @@ import {
   setAllRepositoriesSelectionAction,
   setRepositorySelectionAction,
 } from '@/features/github/server-actions';
-import type { ImportResult, RepositorySummary } from '@/features/github/types';
+import {
+  requiresGithubReconnect,
+  type ImportResult,
+  type RepositorySummary,
+} from '@/features/github/types';
 
 import { RepositoryCard } from './RepositoryCard';
 import { RepositoryFilters, type VisibilityFilter } from './RepositoryFilters';
@@ -140,12 +144,24 @@ export function RepositoryImporter({ repositories }: { repositories: RepositoryS
 
       {reimportResult?.status === 'error' ? (
         <ErrorState
-          title="We couldn't refresh your repositories"
+          title={
+            requiresGithubReconnect(reimportResult.kind)
+              ? 'Reconnect GitHub to continue'
+              : "We couldn't refresh your repositories"
+          }
           description={reimportResult.message}
           action={
-            <Button type="button" variant="outline" onClick={handleReimport} disabled={isPending}>
-              Try again
-            </Button>
+            requiresGithubReconnect(reimportResult.kind) ? (
+              <Button asChild>
+                <Link href={`/login?next=${encodeURIComponent('/onboarding/repositories')}`}>
+                  Reconnect GitHub
+                </Link>
+              </Button>
+            ) : (
+              <Button type="button" variant="outline" onClick={handleReimport} disabled={isPending}>
+                Try again
+              </Button>
+            )
           }
         />
       ) : null}
