@@ -151,3 +151,10 @@ build/
 
 #claude
 .claude/
+
+# AI evaluation run reports (features/evaluation) — generated per run;
+# baseline.json is the one exception, since it's the human-reviewed
+# reference every run's regression comparison is checked against and must
+# travel with the repo, not a machine-local artifact.
+apps/web/eval-reports/*
+!apps/web/eval-reports/baseline.json

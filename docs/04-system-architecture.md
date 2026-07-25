@@ -266,7 +266,30 @@ Every run writes `model`, `pipeline_version` (`assessment-v1`), and `prompt_vers
 
 ### Known gap
 
-The golden-dataset eval suite (CLAUDE.md §17.9) does not exist yet. Prompt and model changes therefore ship without calibration, evidence-grounding, or fairness regression evidence. This is a release gate that is currently missing, not an optional extra.
+The golden-dataset eval suite now exists (see the AI Evaluation Framework section below) but has no promoted baseline yet — the first real run against a valid API key must be reviewed and promoted (`npm run eval -- --promote`) before regression detection has anything to compare against.
+
+## AI Evaluation Framework
+
+Implements [ADR-008](adr/ADR-008-ai-evaluation-framework.md). Module: `apps/web/src/features/evaluation/`; dataset: `apps/web/datasets/golden/`.
+
+```
+datasets/golden/ (20 fixture profiles, no database)
+             → runner.ts (the real aggregateEvidence/prompt/mapAssessments from features/analysis)
+             → Claude (structured outputs, same task config as production)
+             → metrics.ts → reporter.ts → eval-reports/*.json + *.md
+```
+
+A deterministic regression suite (CLAUDE.md §17.9, §22.5): it must run — and pass — before any change to `features/analysis/prompt.ts`, its output schema, or `lib/ai/models.ts` ships. No recruiter features, no UI, no prompt content of its own; it measures the prompt that already exists.
+
+**Why it imports `features/analysis`'s internals directly.** Normally cross-feature access goes through a feature's public `index.ts` (CLAUDE.md §4). Here that would mean either re-implementing aggregation and citation validation (risking silent drift from production) or seeding real database rows for every run. Instead `runner.ts` calls `aggregateEvidence`, `toSkillBriefs`, `buildAssessmentUserContent`, `buildAssessmentOutputSchema`, and `mapAssessments` directly — the actual functions the production worker calls — against fixture evidence shaped exactly like `evidence_items` rows, with fixture string ids instead of database UUIDs. Nothing in `features/analysis` is modified; every import is read-only. See ADR-008 for the full rationale.
+
+**Hallucination is measured before the mapper's guarantee applies.** `mapAssessments` already drops any citation naming an id outside the supplied evidence set — that's ADR-007's guarantee. Measuring hallucination *after* the mapper runs would always read zero. The runner instead checks every citation in the model's **raw** response against the case's citable evidence-id set first, so the metric reflects how often the model itself tries to fabricate a source, not how well the mapper's guardrail works (that's tested separately, in `features/analysis`).
+
+**The composite score enforces the release gate, not just reports it.** `overallScore` (0–100) is forced to zero on any hallucination, anywhere in the run, and is scaled by the fraction of cases that didn't error out — regardless of how good the other metrics look. `npm run eval` exits non-zero on any case failure or any metric regressed against `eval-reports/baseline.json` (the last human-promoted run; every other report artifact is gitignored). Wire the exit code into CI.
+
+**Dataset:** 20 hand-authored cases across 8 archetypes (frontend, backend, fullstack, ML, mobile, OSS maintainer, beginner, senior), each pairing a synthetic evidence set with expected skills, confidence bands, and grounding evidence ids — plus, for several cases, skills the evidence deliberately does **not** support (`unsupportedSkills`), to catch over-claiming.
+
+**Known gap:** covers `features/analysis` only, not the database-layer guarantee (RLS, `persist_skill_assessment`) — that remains `features/analysis`'s own concern. See the feature README for methodology, the regression tolerance bands, prompt acceptance criteria, and the release-gate policy in full.
 
 ## Async pipeline
 
