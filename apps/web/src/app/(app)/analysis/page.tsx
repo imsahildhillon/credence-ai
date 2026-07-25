@@ -46,6 +46,15 @@ export default async function AnalysisPage() {
 
   const analysis = await getLatestAnalysis(user.id);
 
+  // Once assessment has produced a report, the profile is the primary
+  // product experience — this holding screen hands off to it rather than
+  // showing a stale "ready" card for a report that already exists
+  // elsewhere (CLAUDE.md §9.5: personalized pages are dynamic by default,
+  // so this check runs on every visit, not just once).
+  if (analysis && (analysis.status === 'completed' || analysis.status === 'partial')) {
+    redirect('/profile');
+  }
+
   if (!analysis) {
     return (
       <div className="mx-auto flex w-full max-w-xl flex-col gap-8">

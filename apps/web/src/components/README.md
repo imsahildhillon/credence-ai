@@ -9,12 +9,25 @@ The reusable UI primitives every feature and page builds on. Companion docs:
 
 ```
 components/
+├── ConfidenceIndicator.tsx  Platform-defining — the only way confidence renders (CLAUDE.md §11)
+├── EvidenceCard.tsx         Platform-defining — claim + evidence + confidence, together, always
+├── AiContentMarker.tsx      Platform-defining — wraps every AI-generated string, no exceptions
 ├── ui/          Display & overlay primitives, plus Button (used everywhere, not form-specific)
 ├── forms/       Form-field controls — every input a form actually submits
 ├── feedback/    Status communication — loading, progress, empty/error states, toasts
 ├── navigation/  Wayfinding — tabs, breadcrumbs, pagination
 └── layout/      Reserved for future structural primitives (Container, Stack, PageHeader…) — empty for now
 ```
+
+## Platform-defining components
+
+`ConfidenceIndicator`, `EvidenceCard`, and `AiContentMarker` sit outside the `ui/`/`forms/`/`feedback/`/`navigation/` categories deliberately — they are not generic primitives, they encode product policy (CLAUDE.md §11.1). A future `ConsentSurface` (visibility/sharing controls) belongs here too when that feature is built; it does not exist yet.
+
+| Component             | Contract                                                                  | Notes                                                                                                                                 |
+| --------------------- | ------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------- |
+| `ConfidenceIndicator` | `confidence: ConfidenceLevel` (required)                                  | Always the `ai` token — confidence is a property of the assessment process, never restyled to `strength`/`growth`/`alert`             |
+| `EvidenceCard`        | `claim`, `confidence`, `evidenceRefs` (non-empty tuple type) all required | No prop lets a caller render a claim without its evidence — `evidenceRefs: readonly [T, ...T[]]` makes an empty array a compile error |
+| `AiContentMarker`     | wraps `children`                                                          | The one place AI-authored text becomes visually labeled; nothing renders AI text outside it                                           |
 
 Each category has a barrel `index.ts` re-exporting every component in it, so `import { Button, Card } from '@/components/ui'` works alongside the direct `@/components/ui/button` path. This also means a future Storybook config can glob `src/components/*/*.tsx` without any restructuring.
 

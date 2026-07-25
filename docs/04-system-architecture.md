@@ -291,6 +291,47 @@ A deterministic regression suite (CLAUDE.md §17.9, §22.5): it must run — and
 
 **Known gap:** covers `features/analysis` only, not the database-layer guarantee (RLS, `persist_skill_assessment`) — that remains `features/analysis`'s own concern. See the feature README for methodology, the regression tolerance bands, prompt acceptance criteria, and the release-gate policy in full.
 
+## Candidate Engineering Profile
+
+Module: `apps/web/src/features/profile/`; route: `app/(app)/profile/page.tsx`. The profile is the primary product experience — an explainable engineering dossier, not a résumé. It renders nine sections: Engineering Summary, Skill Cards, Technology Map, Engineering Timeline, Collaboration, Code Ownership, Repository Highlights, Evidence Explorer, and Analysis Metadata.
+
+### Profile Architecture
+
+```
+analyses + skill_assessments + assessment_evidence + evidence_items + repositories
+             → server/queries.ts (RLS-scoped, batched — 6 queries total, never per-row)
+             → server/aggregator.ts (pure — Technology Map, Timeline, Collaboration, Ownership, Highlights)
+             → server/service.ts (orchestration → ProfileResult)
+             → app/(app)/profile/page.tsx
+```
+
+`/profile` is the terminal node of the post-onboarding redirect chain: `dashboard` → `analysis` → `profile`. `/analysis` now redirects to `/profile` once an analysis reaches `completed`/`partial`, so the holding screen hands off to the report the moment it exists rather than showing a stale "ready" card. `queued`/`processing`/`failed` analyses never reach `/profile` — they redirect back to `/analysis`, which already owns those states.
+
+Sections 3–7 (Technology Map, Timeline, Collaboration, Code Ownership, Repository Highlights) are **pure aggregation** — `server/aggregator.ts` has no network calls, no Claude, and no randomness; every value is a count or a group over `evidence_items` rows the pipeline already ingested. Code Ownership specifically aggregates `contributor` evidence (GitHub's own whole-repository tally) rather than the `commit` evidence sample, which the ingestion pipeline caps (`MAX_COMMITS`) — computing "commit share" from a capped sample would understate contribution on active repositories.
+
+Sections 1–2 (Engineering Summary, Skill Cards) render AI-authored text — but that text is exactly what `features/analysis` already persisted to `skill_assessments`/`analyses`. Nothing in `features/profile` calls Claude or generates new text.
+
+### Explainability
+
+Two shared, platform-defining components (`src/components/`) make "no unsupported claims" a compile-time property, not a review checklist item:
+
+- **`EvidenceCard`** — `claim`, `confidence`, and `evidenceRefs` are all required props, and `evidenceRefs` is typed as a non-empty tuple (`readonly [T, ...T[]]`). An empty evidence array is a TypeScript error, not a runtime check a call site could skip.
+- **`AiContentMarker`** — wraps every AI-generated string end to end. The Engineering Summary paragraph and every Skill Card's reasoning render inside it; nothing AI-authored appears anywhere else on the page.
+- **`ConfidenceIndicator`** — the only way confidence renders, always with the `ai` semantic token (never `strength`/`growth`/`alert`), so confidence (a property of the assessment process) is never visually confused with the evidence-derived signals those other tokens represent.
+
+### Evidence Navigation
+
+The Evidence Explorer (Section 8) is the product's core differentiator: every commit, pull request, review, issue, release, and contributor record, each with the direct GitHub link the evidence pipeline captured at ingestion (`evidence_items.external_url`). Filtering (`?kind=`) and pagination (`?page=`) are plain server-rendered links, validated once at the boundary (`schemas.ts`) — there is no client-side list transformation and no client component for the list itself, so performance scales with page size, not with total evidence volume. Repository Highlights, Skill Cards, and the Engineering Summary all link into the same evidence rows the Explorer shows, so "show evidence" always resolves to the same underlying record everywhere on the page.
+
+### Future Public Profile
+
+Only the authenticated owner can view `/profile` today — every query in `server/queries.ts` runs through the user-scoped server client (Row Level Security is the ownership boundary; there is no service-role read anywhere in this feature), and the route itself redirects signed-out visitors. Public sharing is out of scope for this sprint, but the architecture doesn't need to change shape to add it later:
+
+- `server/service.ts`'s `getProfileForCurrentUser()` would gain a sibling, `getPublicProfile(shareToken)`, that resolves a share token to a profile id instead of reading the session — the aggregation and rendering layers (`aggregator.ts`, `components/*`) are already parameterized by profile id and need no changes.
+- The RLS boundary would need a new policy keyed on a `profile_shares` (or equivalent) table rather than `auth.uid()` — deny-by-default until a share is explicitly created, matching CLAUDE.md §18.2.
+- `ConsentSurface` (CLAUDE.md §11.1's fourth platform-defining component, not built yet) is where the share-creation/revocation UI belongs, living alongside `ConfidenceIndicator`/`EvidenceCard`/`AiContentMarker` in `src/components/`.
+- The Evidence Explorer and Skill Cards would need a read-only rendering mode (no owner-only affordances) — none exist today, so this is additive, not a rework.
+
 ## Async pipeline
 
 Redis + BullMQ remain the job spine for AI analysis and other slow/expensive work (CLAUDE.md §14) — Supabase's role is persistence, auth, and storage, not job orchestration. Job processors read/write through the same `@supabase/supabase-js` clients as request handlers, using the service-role client only where a job genuinely needs to act outside any single user's session.
