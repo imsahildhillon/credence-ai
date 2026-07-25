@@ -127,7 +127,11 @@ export function EvidenceExplorer({ evidence, searchParams }: EvidenceExplorerPro
                       : ''}
                   </span>
                 </div>
-                {item.externalUrl ? (
+                {item.linkDead ? (
+                  <span className="text-caption text-muted-foreground shrink-0">
+                    Source no longer reachable
+                  </span>
+                ) : item.externalUrl ? (
                   <a
                     href={item.externalUrl}
                     target="_blank"

@@ -383,6 +383,7 @@ export type Database = {
           external_url: string | null
           github_id: string | null
           id: string
+          link_dead_at: string | null
           occurred_at: string | null
           payload: Json
           profile_id: string
@@ -403,6 +404,7 @@ export type Database = {
           external_url?: string | null
           github_id?: string | null
           id?: string
+          link_dead_at?: string | null
           occurred_at?: string | null
           payload?: Json
           profile_id: string
@@ -423,6 +425,7 @@ export type Database = {
           external_url?: string | null
           github_id?: string | null
           id?: string
+          link_dead_at?: string | null
           occurred_at?: string | null
           payload?: Json
           profile_id?: string

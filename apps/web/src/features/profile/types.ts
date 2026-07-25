@@ -35,6 +35,8 @@ export interface EvidenceEntry {
   readonly repositoryFullName: string | null;
   /** Short structural descriptor (e.g. "+120/-34 · 4 files"), or null when unknown. Never a generated summary. */
   readonly detail: string | null;
+  /** True once a re-check has confirmed `externalUrl` no longer resolves — never show it as a live link when true (flagship trust framework: no dead links). */
+  readonly linkDead: boolean;
 }
 
 /** Section 1 — Engineering Summary. */

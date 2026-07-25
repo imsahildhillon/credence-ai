@@ -1,11 +1,10 @@
 import { cn } from '@/lib/utils';
 
-export type OnboardingStep = 'welcome' | 'repositories' | 'review';
+export type OnboardingStep = 'welcome' | 'repositories';
 
 const STEPS: ReadonlyArray<{ id: OnboardingStep; label: string }> = [
   { id: 'welcome', label: 'Welcome' },
-  { id: 'repositories', label: 'Choose repositories' },
-  { id: 'review', label: 'Review & start' },
+  { id: 'repositories', label: 'Choose & start' },
 ];
 
 /**

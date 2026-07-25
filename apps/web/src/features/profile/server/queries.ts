@@ -64,6 +64,8 @@ export interface EvidenceItemRow {
   readonly external_url: string | null;
   readonly repository_id: string | null;
   readonly payload: Json;
+  /** Set only once a re-check confirms `external_url` no longer resolves — null means presumed reachable (no verification job exists yet). */
+  readonly link_dead_at: string | null;
 }
 
 export interface RepositoryRow {
@@ -181,7 +183,7 @@ export async function listAllEvidence(profileId: string): Promise<readonly Evide
   const { data, error } = await supabase
     .from('evidence_items')
     .select(
-      'id, source_type, title, occurred_at, author_login, external_url, repository_id, payload',
+      'id, source_type, title, occurred_at, author_login, external_url, repository_id, payload, link_dead_at',
     )
     .eq('profile_id', profileId)
     .order('occurred_at', { ascending: false, nullsFirst: false });

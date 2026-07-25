@@ -3,6 +3,7 @@
 import { revalidatePath } from 'next/cache';
 import { redirect } from 'next/navigation';
 
+import { trackEvent } from '@/features/analytics';
 import { getCurrentUser } from '@/features/auth/server/service';
 import { normalizeSupabaseError } from '@/lib/supabase/errors';
 import { createClient } from '@/lib/supabase/server';
@@ -14,7 +15,6 @@ import { listAllGithubRepositories, resolveHeadCommitShas } from './service';
 import { GithubError, type GithubErrorKind, type ImportResult } from './types';
 
 const ONBOARDING_REPOS_PATH = '/onboarding/repositories';
-const ONBOARDING_REVIEW_PATH = '/onboarding/review';
 
 /**
  * Server Actions are the only place onboarding logic is invoked from
@@ -99,7 +99,6 @@ export async function importRepositoriesAction(): Promise<ImportResult> {
     }
 
     revalidatePath(ONBOARDING_REPOS_PATH);
-    revalidatePath(ONBOARDING_REVIEW_PATH);
     return { status: 'success', imported: rows.length };
   } catch (error) {
     if (error instanceof GithubError) {
@@ -142,7 +141,6 @@ export async function setRepositorySelectionAction(
   }
 
   revalidatePath(ONBOARDING_REPOS_PATH);
-  revalidatePath(ONBOARDING_REVIEW_PATH);
 }
 
 /** Bulk select/deselect every imported repository for the current student. */
@@ -166,11 +164,10 @@ export async function setAllRepositoriesSelectionAction(included: boolean): Prom
   }
 
   revalidatePath(ONBOARDING_REPOS_PATH);
-  revalidatePath(ONBOARDING_REVIEW_PATH);
 }
 
 /**
- * Review → "Start Analysis": enqueues the job together with an **immutable
+ * Confirm → "Start Analysis": enqueues the job together with an **immutable
  * snapshot** of the selected repositories, atomically.
  *
  * Before freezing the snapshot we best-effort resolve each repository's HEAD
@@ -208,6 +205,8 @@ export async function startAnalysisAction(_formData: FormData): Promise<void> {
   if (error) {
     throw normalizeSupabaseError(error);
   }
+
+  await trackEvent('repository_connected', { repositoryCount: selectedRefs.length });
 
   revalidatePath('/analysis');
   redirect('/analysis');

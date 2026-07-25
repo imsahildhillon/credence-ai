@@ -136,6 +136,7 @@ export function toEvidenceEntry(
     repositoryId: row.repository_id,
     repositoryFullName: repository?.full_name ?? null,
     detail: detailFor(row),
+    linkDead: row.link_dead_at !== null,
   };
 }
 

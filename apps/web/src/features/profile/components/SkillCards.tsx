@@ -17,6 +17,12 @@ const LEVEL_LABEL: Readonly<Record<AssessmentLevel, string>> = {
   not_yet_assessed: 'Not yet assessed',
 };
 
+const CONFIDENCE_LABEL: Readonly<Record<SkillCardData['confidence'], string>> = {
+  high: 'High confidence',
+  moderate: 'Moderate confidence',
+  preliminary: 'Preliminary confidence',
+};
+
 /**
  * `strong` maps to the `strength` token and `developing` to `growth` —
  * both are the tokens' literal reserved meanings (verified strong signal;
@@ -81,7 +87,9 @@ export function SkillCards({ skillCards }: SkillCardsProps) {
               </summary>
 
               <CardContent className="flex flex-col gap-4 pt-0">
-                <AiContentMarker>
+                <AiContentMarker
+                  context={`${card.evidence.length} evidence item${card.evidence.length === 1 ? '' : 's'} · ${CONFIDENCE_LABEL[card.confidence]}`}
+                >
                   <p>{card.reasoning}</p>
                 </AiContentMarker>
 

@@ -13,6 +13,7 @@ import {
   importRepositoriesAction,
   setAllRepositoriesSelectionAction,
   setRepositorySelectionAction,
+  startAnalysisAction,
 } from '@/features/github/server-actions';
 import {
   requiresGithubReconnect,
@@ -22,6 +23,7 @@ import {
 
 import { RepositoryCard } from './RepositoryCard';
 import { RepositoryFilters, type VisibilityFilter } from './RepositoryFilters';
+import { SubmitButton } from './SubmitButton';
 
 const ALL_LANGUAGES = 'all';
 
@@ -193,11 +195,11 @@ export function RepositoryImporter({ repositories }: { repositories: RepositoryS
             : `${selectedCount} repositor${selectedCount === 1 ? 'y' : 'ies'} will be analyzed.`}
         </p>
         {selectedCount === 0 ? (
-          <Button disabled>Review selection</Button>
+          <Button disabled>Start analysis</Button>
         ) : (
-          <Button asChild>
-            <Link href="/onboarding/review">Review selection</Link>
-          </Button>
+          <form action={startAnalysisAction}>
+            <SubmitButton pendingLabel="Starting…">Start analysis</SubmitButton>
+          </form>
         )}
       </div>
     </div>

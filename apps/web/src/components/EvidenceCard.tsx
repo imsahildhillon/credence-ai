@@ -8,6 +8,12 @@ import { cn } from '@/lib/utils';
 
 type ConfidenceLevel = Database['public']['Enums']['confidence_level'];
 
+const CONFIDENCE_LABEL: Readonly<Record<ConfidenceLevel, string>> = {
+  high: 'High confidence',
+  moderate: 'Moderate confidence',
+  preliminary: 'Preliminary confidence',
+};
+
 /** The minimal shape a piece of evidence needs to be linkable from a claim. */
 export interface EvidenceCardRef {
   readonly id: string;
@@ -52,7 +58,9 @@ export function EvidenceCard({
     <div className={cn('flex flex-col gap-4', className)} {...props}>
       {title ? <h3 className="text-title">{title}</h3> : null}
 
-      <AiContentMarker>
+      <AiContentMarker
+        context={`${evidenceRefs.length} evidence item${evidenceRefs.length === 1 ? '' : 's'} · ${CONFIDENCE_LABEL[confidence]}`}
+      >
         <p>{claim}</p>
 
         {strengths && strengths.length > 0 ? (

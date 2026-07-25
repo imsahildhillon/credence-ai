@@ -25,11 +25,10 @@ import { updateSession } from '@/lib/supabase/middleware';
  * (`getRecruiterSession`), not here, per the plan ADR-003 already laid out.
  */
 export const PUBLIC_ROUTES = ['/', '/auth/callback', '/recruiter-access'] as const;
-export const AUTH_ROUTES = ['/login', '/signup'] as const;
+export const AUTH_ROUTES = ['/login'] as const;
 export const PROTECTED_ROUTE_PREFIXES = [
   '/dashboard',
   '/profile',
-  '/settings',
   '/onboarding',
   '/analysis',
   '/recruiter',

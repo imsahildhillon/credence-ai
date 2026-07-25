@@ -26,5 +26,5 @@ export default async function LoginPage({ searchParams }: LoginPageProps) {
     ? (ERROR_MESSAGES[error] ?? 'Sign-in failed — please try again.')
     : undefined;
 
-  return <AuthForm mode="login" next={next} errorMessage={errorMessage} />;
+  return <AuthForm next={next} errorMessage={errorMessage} />;
 }

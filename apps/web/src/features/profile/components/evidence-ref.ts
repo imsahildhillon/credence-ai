@@ -13,13 +13,23 @@ export const EVIDENCE_KIND_LABEL: Readonly<Record<EvidenceSourceType, string>> =
   contributor: 'Contribution record',
 };
 
-/** Reduces the feature's rich `EvidenceEntry` to the shape the shared, cross-feature `EvidenceCard` accepts. */
+/**
+ * Reduces the feature's rich `EvidenceEntry` to the shape the shared,
+ * cross-feature `EvidenceCard` accepts. A confirmed-dead link is never
+ * passed through as `href` — `EvidenceCard` already renders a plain,
+ * non-clickable label when `href` is null, so this reuses that fallback
+ * rather than adding new UI (flagship trust framework: no dead links,
+ * ever).
+ */
 export function toEvidenceCardRef(entry: EvidenceEntry): EvidenceCardRef {
   const kind = entry.sourceType ? EVIDENCE_KIND_LABEL[entry.sourceType] : 'Evidence';
+  const label = entry.linkDead
+    ? `${kind}: ${entry.title} (source no longer reachable)`
+    : `${kind}: ${entry.title}`;
   return {
     id: entry.id,
-    label: `${kind}: ${entry.title}`,
-    href: entry.externalUrl,
+    label,
+    href: entry.linkDead ? null : entry.externalUrl,
   };
 }
 
