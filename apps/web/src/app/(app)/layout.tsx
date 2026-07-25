@@ -1,8 +1,8 @@
 import { redirect } from 'next/navigation';
 
-import { Button } from '@/components/ui/button';
 import { signOutAction } from '@/features/auth/server/actions';
 import { getCurrentUser } from '@/features/auth/server/service';
+import { SubmitButton } from '@/features/github/components/SubmitButton';
 
 /**
  * Defense-in-depth alongside the root middleware (CLAUDE.md §18.2): every
@@ -22,9 +22,9 @@ export default async function AppLayout({ children }: { children: React.ReactNod
     <div className="flex min-h-svh flex-col">
       <header className="flex items-center justify-end border-b p-4">
         <form action={signOutAction}>
-          <Button type="submit" variant="ghost" size="sm">
+          <SubmitButton pendingLabel="Signing out…" variant="ghost" size="sm">
             Sign out
-          </Button>
+          </SubmitButton>
         </form>
       </header>
       <main className="flex-1 p-8">{children}</main>
