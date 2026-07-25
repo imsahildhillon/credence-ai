@@ -2,7 +2,7 @@ import 'server-only';
 
 import { createAdminClient } from '@/lib/supabase/admin';
 import { normalizeSupabaseError } from '@/lib/supabase/errors';
-import type { Database } from '@/lib/supabase/types';
+import type { Database, Json } from '@/lib/supabase/types';
 
 import { toEvidenceItemInsert } from './mapper';
 import type {
@@ -147,6 +147,63 @@ export async function recordAnalysisError(
     message: failure.message,
     retryable: failure.retryable,
   });
+  if (error) {
+    throw normalizeSupabaseError(error);
+  }
+}
+
+export interface EvidenceLivenessCandidate {
+  readonly id: string;
+  readonly profile_id: string;
+  readonly source_type: Database['public']['Enums']['evidence_source_type'] | null;
+  readonly author_login: string | null;
+  readonly payload: Json;
+  readonly github_id: string | null;
+  readonly repository_full_name: string | null;
+}
+
+/**
+ * The liveness worker's scan query — rows not yet confirmed dead, least-
+ * recently (or never) checked first, matching `evidence_items_link_check_due_idx`
+ * (`supabase/migrations/20260726130000_add_evidence_link_checked_at.sql`).
+ */
+export async function listEvidenceDueForLivenessCheck(
+  limit: number,
+): Promise<readonly EvidenceLivenessCandidate[]> {
+  const admin = createAdminClient();
+  const { data, error } = await admin
+    .from('evidence_items')
+    .select(
+      'id, profile_id, source_type, author_login, payload, github_id, repository:repositories(full_name)',
+    )
+    .is('link_dead_at', null)
+    .not('external_url', 'is', null)
+    .order('link_checked_at', { ascending: true, nullsFirst: true })
+    .limit(limit);
+  if (error) {
+    throw normalizeSupabaseError(error);
+  }
+  return (data ?? []).map((row) => {
+    const repository = Array.isArray(row.repository) ? row.repository[0] : row.repository;
+    return {
+      id: row.id,
+      profile_id: row.profile_id,
+      source_type: row.source_type,
+      author_login: row.author_login,
+      payload: row.payload,
+      github_id: row.github_id,
+      repository_full_name: repository?.full_name ?? null,
+    };
+  });
+}
+
+export async function markEvidenceLivenessChecked(evidenceId: string, alive: boolean): Promise<void> {
+  const admin = createAdminClient();
+  const now = new Date().toISOString();
+  const { error } = await admin
+    .from('evidence_items')
+    .update({ link_checked_at: now, ...(alive ? {} : { link_dead_at: now }) })
+    .eq('id', evidenceId);
   if (error) {
     throw normalizeSupabaseError(error);
   }

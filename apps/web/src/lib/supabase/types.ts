@@ -383,6 +383,7 @@ export type Database = {
           external_url: string | null
           github_id: string | null
           id: string
+          link_checked_at: string | null
           link_dead_at: string | null
           occurred_at: string | null
           payload: Json
@@ -404,6 +405,7 @@ export type Database = {
           external_url?: string | null
           github_id?: string | null
           id?: string
+          link_checked_at?: string | null
           link_dead_at?: string | null
           occurred_at?: string | null
           payload?: Json
@@ -425,6 +427,7 @@ export type Database = {
           external_url?: string | null
           github_id?: string | null
           id?: string
+          link_checked_at?: string | null
           link_dead_at?: string | null
           occurred_at?: string | null
           payload?: Json

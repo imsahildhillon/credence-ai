@@ -10,8 +10,9 @@ analysis job → analysis_repositories (snapshot) → GitHub → normalization �
 
 - `worker.ts` — `processAnalysis(analysisId)`, `processNextQueuedAnalysis()`. The job processor; invoked today by `POST /api/v1/analyses/process`, and by BullMQ unchanged once that lands.
 - `service.ts` — `ingestRepositoryEvidence(token, snapshotRow)`: collects and normalizes one repository, returning evidence **and** per-stage failures as data.
-- `queries.ts` — service-role data access (claim, snapshot read, upsert, error recording, status transitions).
+- `queries.ts` — service-role data access (claim, snapshot read, upsert, error recording, status transitions, link-liveness scan/write).
 - `mapper.ts` — pure GitHub → domain normalization. `client.ts` — bounded GitHub REST. `types.ts` — wire + domain types.
+- `link-liveness.ts` / `link-liveness-worker.ts` — `checkEvidenceLiveness()`, `processLinkLivenessBatch()`: re-verifies `external_url` against the authoritative REST API (never the public HTML page, which 404s for private repos regardless of whether the resource exists) and writes `link_checked_at`/`link_dead_at`. Invoked by `POST /api/v1/evidence/verify-links`, on the same on-demand-trigger model as the analysis worker — nothing schedules it automatically yet.
 
 **Key invariants:**
 

@@ -226,3 +226,29 @@ export async function listContributors(token: string, fullName: string): Promise
   }
   return (await response.json()) as GhContributor[];
 }
+
+/**
+ * Single-item lookups used only by the link-liveness check
+ * (`link-liveness.ts`) — each throws `GithubError('not_found')` via
+ * `githubGet` exactly like every other call here, so a dead link and a
+ * transient failure are never confused (CLAUDE.md §19.1).
+ */
+export async function fetchIssue(
+  token: string,
+  fullName: string,
+  number: number,
+): Promise<GhIssue> {
+  return githubGetJson<GhIssue>(`/repos/${fullName}/issues/${number}`, token);
+}
+
+export async function fetchReleaseByTag(
+  token: string,
+  fullName: string,
+  tag: string,
+): Promise<GhRelease> {
+  return githubGetJson<GhRelease>(`/repos/${fullName}/releases/tags/${encodeURIComponent(tag)}`, token);
+}
+
+export async function fetchGithubUser(token: string, login: string): Promise<{ readonly id: number }> {
+  return githubGetJson<{ readonly id: number }>(`/users/${encodeURIComponent(login)}`, token);
+}
