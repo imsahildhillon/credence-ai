@@ -706,27 +706,33 @@ export type Database = {
       }
       saved_candidates: {
         Row: {
+          bookmarked: boolean
           created_at: string
           id: string
           note: string | null
           profile_id: string
           recruiter_id: string
+          status: Database["public"]["Enums"]["candidate_status"]
           updated_at: string
         }
         Insert: {
+          bookmarked?: boolean
           created_at?: string
           id?: string
           note?: string | null
           profile_id: string
           recruiter_id: string
+          status?: Database["public"]["Enums"]["candidate_status"]
           updated_at?: string
         }
         Update: {
+          bookmarked?: boolean
           created_at?: string
           id?: string
           note?: string | null
           profile_id?: string
           recruiter_id?: string
+          status?: Database["public"]["Enums"]["candidate_status"]
           updated_at?: string
         }
         Relationships: [
@@ -940,6 +946,7 @@ export type Database = {
         | "failed"
         | "partial"
       assessment_level: "strong" | "developing" | "not_yet_assessed"
+      candidate_status: "new" | "reviewing" | "interviewing" | "archived"
       confidence_level: "high" | "moderate" | "preliminary"
       consent_type: "analysis" | "visibility"
       contact_request_status: "pending" | "accepted" | "declined" | "expired"
@@ -1092,6 +1099,7 @@ export const Constants = {
         "partial",
       ],
       assessment_level: ["strong", "developing", "not_yet_assessed"],
+      candidate_status: ["new", "reviewing", "interviewing", "archived"],
       confidence_level: ["high", "moderate", "preliminary"],
       consent_type: ["analysis", "visibility"],
       contact_request_status: ["pending", "accepted", "declined", "expired"],

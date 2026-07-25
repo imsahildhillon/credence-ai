@@ -91,6 +91,31 @@ export async function getLatestAnalysis(): Promise<AnalysisRow | null> {
   return data;
 }
 
+/**
+ * Same shape as `getLatestAnalysis`, explicitly scoped to `profileId`
+ * instead of the caller's own session — the read a recruiter needs when
+ * viewing a specific candidate. RLS (`analyses_select_recruiter_visible`)
+ * is what actually enforces "only a currently-visible candidate", exactly
+ * as `analyses_select_own` enforces the current-user case above; this
+ * function adds no authorization logic of its own.
+ */
+export async function getLatestAnalysisForProfile(profileId: string): Promise<AnalysisRow | null> {
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from('analyses')
+    .select(
+      'id, profile_id, status, summary, confidence, model, pipeline_version, prompt_version, error_message, completed_at, created_at',
+    )
+    .eq('profile_id', profileId)
+    .order('created_at', { ascending: false })
+    .limit(1)
+    .maybeSingle();
+  if (error) {
+    throw normalizeSupabaseError(error);
+  }
+  return data;
+}
+
 export async function getGithubUsername(profileId: string): Promise<string | null> {
   const supabase = await createClient();
   const { data, error } = await supabase

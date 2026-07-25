@@ -22,6 +22,7 @@ import {
 import {
   getGithubUsername,
   getLatestAnalysis,
+  getLatestAnalysisForProfile,
   listAllEvidence,
   listAssessmentEvidenceLinks,
   listCurrentSkillAssessments,
@@ -101,30 +102,22 @@ function buildEngineeringSummary(
   };
 }
 
-export async function getProfileForCurrentUser(): Promise<ProfileResult> {
-  const user = await getCurrentUser();
-  if (!user) {
-    // The route itself redirects unauthenticated visitors (CLAUDE.md
-    // §18.2 defense in depth); this function still fails closed rather
-    // than assume the caller already checked.
-    return { status: 'no_analysis' };
-  }
-
-  const analysis = await getLatestAnalysis();
-  if (!analysis) {
-    return { status: 'no_analysis' };
-  }
-  if (analysis.status === 'failed') {
-    return { status: 'failed', errorMessage: analysis.error_message };
-  }
-  if (!READY_STATUSES.has(analysis.status)) {
-    return { status: 'not_ready', analysisStatus: analysis.status };
-  }
-
+/**
+ * Assembles `ProfileData` for a known `profileId` and its already-fetched
+ * `analysis` row — the one place the query/aggregation pipeline runs, so
+ * `getProfileForCurrentUser` (student, own session) and
+ * `getProfileForRecruiter` (recruiter, a specific candidate) can never
+ * drift apart. Callers decide *which* profileId is allowed and *how* the
+ * analysis was fetched; this function only shapes the result.
+ */
+async function assembleReadyProfile(
+  profileId: string,
+  analysis: NonNullable<Awaited<ReturnType<typeof getLatestAnalysis>>>,
+): Promise<ProfileResult & { status: 'ready' }> {
   const [candidateLogin, assessmentRows, evidenceRows] = await Promise.all([
-    getGithubUsername(user.id),
-    listCurrentSkillAssessments(user.id),
-    listAllEvidence(user.id),
+    getGithubUsername(profileId),
+    listCurrentSkillAssessments(profileId),
+    listAllEvidence(profileId),
   ]);
 
   const repositoryIds = [
@@ -177,4 +170,60 @@ export async function getProfileForCurrentUser(): Promise<ProfileResult> {
       evidence,
     },
   };
+}
+
+export async function getProfileForCurrentUser(): Promise<ProfileResult> {
+  const user = await getCurrentUser();
+  if (!user) {
+    // The route itself redirects unauthenticated visitors (CLAUDE.md
+    // §18.2 defense in depth); this function still fails closed rather
+    // than assume the caller already checked.
+    return { status: 'no_analysis' };
+  }
+
+  const analysis = await getLatestAnalysis();
+  if (!analysis) {
+    return { status: 'no_analysis' };
+  }
+  if (analysis.status === 'failed') {
+    return { status: 'failed', errorMessage: analysis.error_message };
+  }
+  if (!READY_STATUSES.has(analysis.status)) {
+    return { status: 'not_ready', analysisStatus: analysis.status };
+  }
+
+  return assembleReadyProfile(user.id, analysis);
+}
+
+/**
+ * Same pipeline as `getProfileForCurrentUser`, for a recruiter viewing one
+ * specific candidate's profile. This function performs no authorization of
+ * its own beyond requiring a signed-in session — Row Level Security is the
+ * actual boundary (every table `assembleReadyProfile` reads carries a
+ * `current_user_role() = 'recruiter' and is_recruiter_visible(profile_id)`
+ * policy, CLAUDE.md §18.2), so a caller who isn't an invited, currently-
+ * visible-to recruiter gets exactly the rows RLS returns for them: none,
+ * which naturally resolves to `no_analysis` below. `features/recruiter` is
+ * still expected to check the caller is an invited recruiter before
+ * reaching here, as its own independent, service-layer check — this
+ * function is the shared data pipeline, not the authorization gate.
+ */
+export async function getProfileForRecruiter(profileId: string): Promise<ProfileResult> {
+  const user = await getCurrentUser();
+  if (!user) {
+    return { status: 'no_analysis' };
+  }
+
+  const analysis = await getLatestAnalysisForProfile(profileId);
+  if (!analysis) {
+    return { status: 'no_analysis' };
+  }
+  if (analysis.status === 'failed') {
+    return { status: 'failed', errorMessage: analysis.error_message };
+  }
+  if (!READY_STATUSES.has(analysis.status)) {
+    return { status: 'not_ready', analysisStatus: analysis.status };
+  }
+
+  return assembleReadyProfile(profileId, analysis);
 }

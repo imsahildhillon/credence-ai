@@ -15,12 +15,14 @@ import { updateSession } from '@/lib/supabase/middleware';
  * AUTH_ROUTES / PROTECTED_ROUTE_PREFIXES, never both, so the two redirect
  * branches below can never fire on the same request.
  *
- * Every authenticated account is currently a student (ADR-003 — the only
- * public identity path is GitHub OAuth, which always yields role=student),
- * so "signed in" and "is a student" are equivalent today and gating on the
- * session alone is sufficient. There are no recruiter routes yet; when they
- * are added they will need an explicit role check here (or in their layout),
- * not merely a session check — tracked as future work in ADR-003.
+ * Every authenticated account was a student until the Recruiter MVP
+ * (ADR-003 — the only public identity path is GitHub OAuth, which always
+ * yields role=student; recruiters are operator-provisioned, never
+ * self-registered). `/recruiter` is now a protected prefix like any other,
+ * so a signed-out request is redirected to `/login` same as `/dashboard`
+ * — but session alone doesn't prove *recruiter*, so the additional role
+ * check lives in `app/(app)/recruiter/layout.tsx`
+ * (`getRecruiterSession`), not here, per the plan ADR-003 already laid out.
  */
 export const PUBLIC_ROUTES = ['/', '/auth/callback', '/recruiter-access'] as const;
 export const AUTH_ROUTES = ['/login', '/signup'] as const;
@@ -30,6 +32,7 @@ export const PROTECTED_ROUTE_PREFIXES = [
   '/settings',
   '/onboarding',
   '/analysis',
+  '/recruiter',
 ] as const;
 
 export async function middleware(request: NextRequest) {

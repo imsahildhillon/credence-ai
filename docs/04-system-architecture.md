@@ -332,6 +332,50 @@ Only the authenticated owner can view `/profile` today — every query in `serve
 - `ConsentSurface` (CLAUDE.md §11.1's fourth platform-defining component, not built yet) is where the share-creation/revocation UI belongs, living alongside `ConfidenceIndicator`/`EvidenceCard`/`AiContentMarker` in `src/components/`.
 - The Evidence Explorer and Skill Cards would need a read-only rendering mode (no owner-only affordances) — none exist today, so this is additive, not a rework.
 
+**Update, Recruiter MVP sprint:** the first half of this prediction shipped, for recruiters rather than a public share token. `getProfileForCurrentUser()` now delegates to a private `assembleReadyProfile(profileId, analysis)` helper, and a sibling export, `getProfileForRecruiter(profileId)`, calls the exact same helper with an explicit `profileId` instead of the session's own id — see "Shared Profile Model" below. The aggregation and rendering layers needed zero changes, exactly as anticipated.
+
+## Candidate View
+
+The Candidate Engineering Profile section above describes the **candidate's own view** of `/profile` — the only view that existed before the Recruiter MVP sprint. Nothing about it changed: `getProfileForCurrentUser()` has the same signature, the same behavior, and the same callers. It is documented here only to name it as one of the two views the Shared Profile Model now serves.
+
+## Recruiter View
+
+Module: `apps/web/src/features/recruiter/`; routes: `app/(app)/recruiter/*`. An invitation-only, read-mostly view of consented candidates, plus a recruiter's private tracking on top (bookmark, status, notes). This feature computes no assessment, skill, or evidence fact of its own.
+
+```
+getRecruiterSession()  →  proves "this session is an invited recruiter" (a `recruiters` row exists for auth.uid())
+        │
+        ├─ getCandidateList(sort)         → this feature's own light queries: profiles + analyses + skill_assessments + saved_candidates
+        │                                    (RLS — profiles_select_recruiter_visible / analyses_select_recruiter_visible / etc. —
+        │                                    is what filters this to currently-visible candidates only; the query itself has no filter logic)
+        └─ getCandidateProfile(profileId)  → features/profile.getProfileForRecruiter(profileId)  (Shared Profile Model, below)
+                                            + this feature's own saved_candidates row (bookmark/status/note)
+                                            + a view_events row, logged via the service-role client after independently
+                                              confirming is_recruiter_visible(profileId)
+```
+
+**Invitation, not self-signup.** A `recruiters` row can only be created by an operator through the service-role client (ADR-003) — there is no code path anywhere in the app that creates one from a public request. `getRecruiterSession()` (checked in both `app/(app)/recruiter/layout.tsx` and every `features/recruiter` service function — CLAUDE.md §18.2, checked twice, never once) treats that row's existence as the entire proof of "invited." `middleware.ts`'s `PROTECTED_ROUTE_PREFIXES` gates `/recruiter/*` on session presence, same as any other protected route; the *recruiter-specific* check is the layout's job, exactly as ADR-003's "Role-based route gating is deferred" note anticipated.
+
+**No ranking, no AI sorting.** The Candidate List (`app/(app)/recruiter/candidates/page.tsx`) supports exactly two sorts — most-recently-analyzed and alphabetical, both plain field comparisons via URL `?sort=`, link-based like the Evidence Explorer's filters. Nothing in this feature scores or orders candidates against each other.
+
+**Recruiter tracking lives on `saved_candidates`, extended, not a new table.** That table was already "one row per recruiter-candidate pair with a private note" before this sprint; it gained `bookmarked boolean` and `status candidate_status` columns rather than spawning a second recruiter-candidate table for what is one concept (a recruiter's private state for one candidate) with three fields. A row is only created when a recruiter first acts — its absence means "new, not bookmarked, no note," so viewing a candidate never writes anything by itself. Insert/update policies require `is_recruiter_visible(profile_id)` in addition to `recruiter_id = auth.uid()`, closing a gap the original policy (ownership-only) left open.
+
+**Notes are private and never touch the AI pipeline.** `saved_candidates.note` is recruiter-authored markdown, rendered with `react-markdown` (no `dangerouslySetInnerHTML`, no raw-HTML parsing) and deliberately rendered *outside* `AiContentMarker` — marking human-written text as AI-generated would be dishonest in the other direction from the usual concern.
+
+## Shared Profile Model
+
+The Candidate View and Recruiter View render the same nine-section profile through the same pipeline — `features/profile` has exactly one data-shaping code path, not two:
+
+```
+                              ┌─ getProfileForCurrentUser()   (candidate, own session → own profileId)
+assembleReadyProfile(profileId, analysis) ─┤
+                              └─ getProfileForRecruiter(profileId)  (recruiter, given profileId)
+```
+
+`assembleReadyProfile` is a private function in `features/profile/server/service.ts` — both public entry points call it, so the query batching, the aggregation (`server/aggregator.ts`), and every presentational component (`EngineeringSummary`, `SkillCards`, `TechnologyMap`, `EngineeringTimeline`, `Collaboration`, `CodeOwnership`, `RepositoryHighlights`, `EvidenceExplorer`, `AnalysisMetadata`, `ProvenanceBanner`, `PartialAnalysisBanner`) render identically for both audiences, imported as-is by `app/(app)/recruiter/candidate/[id]/page.tsx`. Neither the student-facing behavior nor any existing export changed shape — `getProfileForRecruiter` and the `getLatestAnalysisForProfile(profileId)` query it needs are net-new additions, not modifications.
+
+**Authorization is not this function's job.** `assembleReadyProfile`/`getProfileForRecruiter` perform no role check of their own — Row Level Security is what actually restricts a recruiter's reads to currently-visible candidates (every table it touches — `analyses`, `skill_assessments`, `assessment_evidence`, `evidence_items`, `repositories` — carries a `current_user_role() = 'recruiter' and is_recruiter_visible(profile_id)` policy predating this sprint). `github_accounts` has no recruiter policy at all, so `candidateLogin` (the GitHub username) correctly comes back `null` for a recruiter — GitHub identity stays anonymized until a contact request is accepted, exactly as it already was for the profile's public-sharing design above. `features/recruiter` still performs its own independent authorization check (`getRecruiterSession`) before ever calling `getProfileForRecruiter` — RLS and the service layer are two independent gates, per CLAUDE.md §18.2, not one relying on the other.
+
 ## Async pipeline
 
 Redis + BullMQ remain the job spine for AI analysis and other slow/expensive work (CLAUDE.md §14) — Supabase's role is persistence, auth, and storage, not job orchestration. Job processors read/write through the same `@supabase/supabase-js` clients as request handlers, using the service-role client only where a job genuinely needs to act outside any single user's session.
