@@ -536,4 +536,19 @@
     outline: 2px solid var(--focus);
     outline-offset: 2px;
   }
+
+  /* CLAUDE.md §13.6: motion respects prefers-reduced-motion with full
+     functional equivalence — spinners and skeletons still communicate
+     "loading" via their persistent shape/role, not the animation itself,
+     so removing the animation loses no information. */
+  @media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+      scroll-behavior: auto !important;
+    }
+  }
 }

@@ -9,6 +9,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import type { AssessmentLevel, SkillCard as SkillCardData } from '../types';
 
 import { toEvidenceCardRefsOrNull } from './evidence-ref';
+import { TrackedDetails } from './TrackedDetails';
 
 const LEVEL_LABEL: Readonly<Record<AssessmentLevel, string>> = {
   strong: 'Strong',
@@ -61,7 +62,7 @@ export function SkillCards({ skillCards }: SkillCardsProps) {
         const evidenceRefs = toEvidenceCardRefsOrNull(card.evidence);
         return (
           <Card key={card.assessmentId}>
-            <details className="group">
+            <TrackedDetails skillSlug={card.skillSlug} className="group">
               <summary className="flex cursor-pointer list-none items-start justify-between gap-3 p-6 [&::-webkit-details-marker]:hidden">
                 <div className="flex flex-col gap-2">
                   <div className="flex flex-wrap items-center gap-2">
@@ -99,7 +100,7 @@ export function SkillCards({ skillCards }: SkillCardsProps) {
                   </p>
                 )}
               </CardContent>
-            </details>
+            </TrackedDetails>
           </Card>
         );
       })}

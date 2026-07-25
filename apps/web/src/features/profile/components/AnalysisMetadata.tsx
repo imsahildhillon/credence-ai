@@ -26,6 +26,8 @@ const STATUS_LABEL: Readonly<Record<AnalysisMetadataData['status'], string>> = {
 export function AnalysisMetadata({ metadata }: AnalysisMetadataProps) {
   const rows: readonly { readonly label: string; readonly value: string }[] = [
     { label: 'Analysis status', value: STATUS_LABEL[metadata.status] },
+    { label: 'Repositories analyzed', value: String(metadata.repositoryCount) },
+    { label: 'Evidence items', value: String(metadata.evidenceCount) },
     { label: 'Pipeline version', value: metadata.pipelineVersion ?? 'not recorded' },
     { label: 'Prompt version', value: metadata.promptVersion ?? 'not recorded' },
     { label: 'Model', value: metadata.model ?? 'not recorded' },

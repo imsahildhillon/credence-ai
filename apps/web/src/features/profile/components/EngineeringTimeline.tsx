@@ -95,12 +95,12 @@ export function EngineeringTimeline({ data }: EngineeringTimelineProps) {
                       href={release.externalUrl}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="text-code hover:text-primary underline decoration-dotted underline-offset-2"
+                      className="text-code hover:text-primary min-w-0 break-words underline decoration-dotted underline-offset-2"
                     >
                       {release.repositoryFullName} — {release.tag}
                     </a>
                   ) : (
-                    <span className="text-code">
+                    <span className="text-code min-w-0 break-words">
                       {release.repositoryFullName} — {release.tag}
                     </span>
                   )}

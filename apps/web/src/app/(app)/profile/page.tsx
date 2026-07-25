@@ -4,6 +4,7 @@ import { redirect } from 'next/navigation';
 
 import { EmptyState } from '@/components/feedback/empty-state';
 import { Button } from '@/components/ui/button';
+import { trackEvent } from '@/features/analytics';
 import { getCurrentUser } from '@/features/auth/server/service';
 import { EvidenceExplorerSearchParamsSchema, getProfileForCurrentUser } from '@/features/profile';
 import { AnalysisMetadata } from '@/features/profile/components/AnalysisMetadata';
@@ -12,6 +13,8 @@ import { Collaboration } from '@/features/profile/components/Collaboration';
 import { EngineeringSummary } from '@/features/profile/components/EngineeringSummary';
 import { EngineeringTimeline } from '@/features/profile/components/EngineeringTimeline';
 import { EvidenceExplorer } from '@/features/profile/components/EvidenceExplorer';
+import { PartialAnalysisBanner } from '@/features/profile/components/PartialAnalysisBanner';
+import { ProvenanceBanner } from '@/features/profile/components/ProvenanceBanner';
 import { RepositoryHighlights } from '@/features/profile/components/RepositoryHighlights';
 import { SkillCards } from '@/features/profile/components/SkillCards';
 import { TechnologyMap } from '@/features/profile/components/TechnologyMap';
@@ -79,6 +82,8 @@ export default async function ProfilePage({
 
   const { data } = result;
 
+  await trackEvent('profile_viewed', { analysisStatus: data.analysisMetadata.status });
+
   if (data.skillCards.length === 0 && data.evidence.length === 0) {
     return (
       <div className="mx-auto flex w-full max-w-xl flex-col gap-8">
@@ -108,6 +113,12 @@ export default async function ProfilePage({
           produced it.
         </p>
       </div>
+
+      {data.analysisMetadata.partialMessage ? (
+        <PartialAnalysisBanner message={data.analysisMetadata.partialMessage} />
+      ) : null}
+
+      <ProvenanceBanner metadata={data.analysisMetadata} />
 
       <nav aria-label="Profile sections" className="flex flex-wrap gap-x-4 gap-y-1 border-b pb-4">
         {SECTIONS.map((section) => (

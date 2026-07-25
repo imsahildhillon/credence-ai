@@ -41,7 +41,7 @@ export function RepositoryHighlights({ highlights }: RepositoryHighlightsProps) 
         {highlights.map((repo) => (
           <div key={repo.repositoryId} className="flex flex-col gap-2 rounded-lg border p-4">
             <div className="flex items-start justify-between gap-2">
-              <h3 className="text-title">{repo.fullName}</h3>
+              <h3 className="text-title min-w-0 break-words">{repo.fullName}</h3>
               {repo.externalUrl ? (
                 <a
                   href={repo.externalUrl}

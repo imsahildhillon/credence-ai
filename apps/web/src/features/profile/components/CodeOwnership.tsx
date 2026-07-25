@@ -39,7 +39,9 @@ export function CodeOwnership({ ownership }: CodeOwnershipProps) {
           {ownership.map((repo) => (
             <li key={repo.repositoryId} className="flex flex-col gap-2 px-4 py-3">
               <div className="flex flex-wrap items-center justify-between gap-2">
-                <span className="text-body font-medium">{repo.repositoryFullName}</span>
+                <span className="text-body min-w-0 font-medium break-words">
+                  {repo.repositoryFullName}
+                </span>
                 {repo.isRepositoryOwner ? <Badge variant="outline">Owner</Badge> : null}
               </div>
               <div className="flex flex-wrap items-center gap-3">

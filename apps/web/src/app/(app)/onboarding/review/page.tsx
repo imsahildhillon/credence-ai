@@ -5,6 +5,7 @@ import { redirect } from 'next/navigation';
 import { EmptyState } from '@/components/feedback/empty-state';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import { trackEvent } from '@/features/analytics';
 import { getCurrentUser } from '@/features/auth/server/service';
 import { OnboardingProgress } from '@/features/github/components/OnboardingProgress';
 import { SubmitButton } from '@/features/github/components/SubmitButton';
@@ -29,6 +30,10 @@ export default async function OnboardingReviewPage() {
   }
 
   const selected = (await listRepositorySummaries(account.id)).filter((repo) => repo.included);
+
+  if (selected.length > 0) {
+    await trackEvent('repository_connected', { repositoryCount: selected.length });
+  }
 
   return (
     <div className="mx-auto flex w-full max-w-2xl flex-col gap-8">

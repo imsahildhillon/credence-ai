@@ -3,6 +3,7 @@ import Link from 'next/link';
 import { redirect } from 'next/navigation';
 
 import { EmptyState } from '@/components/feedback/empty-state';
+import { ErrorState } from '@/components/feedback/error-state';
 import { Spinner } from '@/components/feedback/spinner';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -14,10 +15,12 @@ import {
   CardHeader,
   CardTitle,
 } from '@/components/ui/card';
+import { trackEvent } from '@/features/analytics';
 import { getCurrentUser } from '@/features/auth/server/service';
 import { SubmitButton } from '@/features/github/components/SubmitButton';
 import { getLatestAnalysis, listAnalysisSnapshot } from '@/features/github/queries';
-import { connectGithubAction } from '@/features/github/server-actions';
+import { connectGithubAction, startAnalysisAction } from '@/features/github/server-actions';
+import { classifyAnalysisFailure } from '@/features/profile/server/failure-classification';
 
 export const metadata: Metadata = { title: 'Your analysis — Credence AI' };
 
@@ -52,6 +55,11 @@ export default async function AnalysisPage() {
   // elsewhere (CLAUDE.md §9.5: personalized pages are dynamic by default,
   // so this check runs on every visit, not just once).
   if (analysis && (analysis.status === 'completed' || analysis.status === 'partial')) {
+    const completedSnapshot = await listAnalysisSnapshot(analysis.id);
+    await trackEvent('analysis_completed', {
+      analysisStatus: analysis.status,
+      repositoryCount: completedSnapshot.length,
+    });
     redirect('/profile');
   }
 
@@ -67,6 +75,47 @@ export default async function AnalysisPage() {
             </form>
           }
         />
+      </div>
+    );
+  }
+
+  if (analysis.status === 'failed') {
+    // A distinct state, not the generic "queued" card — that copy ("your
+    // repositories are queued... you can safely leave this page") would be
+    // actively misleading for a run that already ended (CLAUDE.md §19.4:
+    // never fake progress, never leave an honest failure looking like an
+    // in-progress one).
+    const classification = await classifyAnalysisFailure(analysis.id);
+
+    return (
+      <div className="mx-auto flex w-full max-w-xl flex-col gap-8">
+        <ErrorState
+          title="We couldn't finish your analysis"
+          description={
+            analysis.error_message ??
+            "Something went wrong while analyzing your repositories. This is usually temporary."
+          }
+          action={
+            classification.requiresGithubReconnect ? (
+              <form action={connectGithubAction}>
+                <SubmitButton pendingLabel="Reconnecting…">Reconnect GitHub</SubmitButton>
+              </form>
+            ) : (
+              <form action={startAnalysisAction}>
+                <SubmitButton pendingLabel="Starting…">Retry analysis</SubmitButton>
+              </form>
+            )
+          }
+        />
+        {classification.rateLimited ? (
+          <p className="text-caption text-center">
+            GitHub temporarily rate-limited this run. Waiting a few minutes before retrying
+            usually resolves it.
+          </p>
+        ) : null}
+        <Button asChild variant="ghost" size="sm" className="mx-auto">
+          <Link href="/onboarding/repositories">Review repository selection</Link>
+        </Button>
       </div>
     );
   }

@@ -3,1037 +3,1114 @@
  * against the credence-ai-dev project (ADR-002). Do not hand-edit —
  * regenerate after every migration and commit the diff in the same PR.
  */
-export type Json = string | number | boolean | null | { [key: string]: Json | undefined } | Json[];
+
+export type Json =
+  | string
+  | number
+  | boolean
+  | null
+  | { [key: string]: Json | undefined }
+  | Json[]
 
 export type Database = {
   // Allows to automatically instantiate createClient with right options
   // instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)
   __InternalSupabase: {
-    PostgrestVersion: '14.5';
-  };
+    PostgrestVersion: "14.5"
+  }
   public: {
     Tables: {
       analyses: {
         Row: {
-          completed_at: string | null;
-          confidence: Database['public']['Enums']['confidence_level'] | null;
-          created_at: string;
-          error_message: string | null;
-          evidence_item_id: string | null;
-          id: string;
-          model: string | null;
-          pipeline_version: string | null;
-          profile_id: string;
-          prompt_version: string | null;
-          started_at: string | null;
-          status: Database['public']['Enums']['analysis_status'];
-          summary: string | null;
-          updated_at: string;
-        };
+          completed_at: string | null
+          confidence: Database["public"]["Enums"]["confidence_level"] | null
+          created_at: string
+          error_message: string | null
+          evidence_item_id: string | null
+          id: string
+          model: string | null
+          pipeline_version: string | null
+          profile_id: string
+          prompt_version: string | null
+          started_at: string | null
+          status: Database["public"]["Enums"]["analysis_status"]
+          summary: string | null
+          updated_at: string
+        }
         Insert: {
-          completed_at?: string | null;
-          confidence?: Database['public']['Enums']['confidence_level'] | null;
-          created_at?: string;
-          error_message?: string | null;
-          evidence_item_id?: string | null;
-          id?: string;
-          model?: string | null;
-          pipeline_version?: string | null;
-          profile_id: string;
-          prompt_version?: string | null;
-          started_at?: string | null;
-          status?: Database['public']['Enums']['analysis_status'];
-          summary?: string | null;
-          updated_at?: string;
-        };
+          completed_at?: string | null
+          confidence?: Database["public"]["Enums"]["confidence_level"] | null
+          created_at?: string
+          error_message?: string | null
+          evidence_item_id?: string | null
+          id?: string
+          model?: string | null
+          pipeline_version?: string | null
+          profile_id: string
+          prompt_version?: string | null
+          started_at?: string | null
+          status?: Database["public"]["Enums"]["analysis_status"]
+          summary?: string | null
+          updated_at?: string
+        }
         Update: {
-          completed_at?: string | null;
-          confidence?: Database['public']['Enums']['confidence_level'] | null;
-          created_at?: string;
-          error_message?: string | null;
-          evidence_item_id?: string | null;
-          id?: string;
-          model?: string | null;
-          pipeline_version?: string | null;
-          profile_id?: string;
-          prompt_version?: string | null;
-          started_at?: string | null;
-          status?: Database['public']['Enums']['analysis_status'];
-          summary?: string | null;
-          updated_at?: string;
-        };
+          completed_at?: string | null
+          confidence?: Database["public"]["Enums"]["confidence_level"] | null
+          created_at?: string
+          error_message?: string | null
+          evidence_item_id?: string | null
+          id?: string
+          model?: string | null
+          pipeline_version?: string | null
+          profile_id?: string
+          prompt_version?: string | null
+          started_at?: string | null
+          status?: Database["public"]["Enums"]["analysis_status"]
+          summary?: string | null
+          updated_at?: string
+        }
         Relationships: [
           {
-            foreignKeyName: 'analyses_evidence_item_id_fkey';
-            columns: ['evidence_item_id'];
-            isOneToOne: false;
-            referencedRelation: 'evidence_items';
-            referencedColumns: ['id'];
+            foreignKeyName: "analyses_evidence_item_id_fkey"
+            columns: ["evidence_item_id"]
+            isOneToOne: false
+            referencedRelation: "evidence_items"
+            referencedColumns: ["id"]
           },
           {
-            foreignKeyName: 'analyses_profile_id_fkey';
-            columns: ['profile_id'];
-            isOneToOne: false;
-            referencedRelation: 'profiles';
-            referencedColumns: ['id'];
+            foreignKeyName: "analyses_profile_id_fkey"
+            columns: ["profile_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
           },
-        ];
-      };
+        ]
+      }
       analysis_errors: {
         Row: {
-          analysis_id: string;
-          created_at: string;
-          id: string;
-          kind: string;
-          message: string;
-          repository_id: string | null;
-          retryable: boolean;
-          stage: string;
-        };
+          analysis_id: string
+          created_at: string
+          id: string
+          kind: string
+          message: string
+          repository_id: string | null
+          retryable: boolean
+          stage: string
+        }
         Insert: {
-          analysis_id: string;
-          created_at?: string;
-          id?: string;
-          kind: string;
-          message: string;
-          repository_id?: string | null;
-          retryable?: boolean;
-          stage: string;
-        };
+          analysis_id: string
+          created_at?: string
+          id?: string
+          kind: string
+          message: string
+          repository_id?: string | null
+          retryable?: boolean
+          stage: string
+        }
         Update: {
-          analysis_id?: string;
-          created_at?: string;
-          id?: string;
-          kind?: string;
-          message?: string;
-          repository_id?: string | null;
-          retryable?: boolean;
-          stage?: string;
-        };
+          analysis_id?: string
+          created_at?: string
+          id?: string
+          kind?: string
+          message?: string
+          repository_id?: string | null
+          retryable?: boolean
+          stage?: string
+        }
         Relationships: [
           {
-            foreignKeyName: 'analysis_errors_analysis_id_fkey';
-            columns: ['analysis_id'];
-            isOneToOne: false;
-            referencedRelation: 'analyses';
-            referencedColumns: ['id'];
+            foreignKeyName: "analysis_errors_analysis_id_fkey"
+            columns: ["analysis_id"]
+            isOneToOne: false
+            referencedRelation: "analyses"
+            referencedColumns: ["id"]
           },
           {
-            foreignKeyName: 'analysis_errors_repository_id_fkey';
-            columns: ['repository_id'];
-            isOneToOne: false;
-            referencedRelation: 'repositories';
-            referencedColumns: ['id'];
+            foreignKeyName: "analysis_errors_repository_id_fkey"
+            columns: ["repository_id"]
+            isOneToOne: false
+            referencedRelation: "repositories"
+            referencedColumns: ["id"]
           },
-        ];
-      };
+        ]
+      }
       analysis_repositories: {
         Row: {
-          analysis_id: string;
-          commit_sha: string | null;
-          created_at: string;
-          default_branch: string | null;
-          full_name: string;
-          github_repo_id: number;
-          id: string;
-          is_private: boolean;
-          primary_language: string | null;
-          repository_id: string;
-        };
+          analysis_id: string
+          commit_sha: string | null
+          created_at: string
+          default_branch: string | null
+          full_name: string
+          github_repo_id: number
+          id: string
+          is_private: boolean
+          primary_language: string | null
+          repository_id: string
+        }
         Insert: {
-          analysis_id: string;
-          commit_sha?: string | null;
-          created_at?: string;
-          default_branch?: string | null;
-          full_name: string;
-          github_repo_id: number;
-          id?: string;
-          is_private: boolean;
-          primary_language?: string | null;
-          repository_id: string;
-        };
+          analysis_id: string
+          commit_sha?: string | null
+          created_at?: string
+          default_branch?: string | null
+          full_name: string
+          github_repo_id: number
+          id?: string
+          is_private: boolean
+          primary_language?: string | null
+          repository_id: string
+        }
         Update: {
-          analysis_id?: string;
-          commit_sha?: string | null;
-          created_at?: string;
-          default_branch?: string | null;
-          full_name?: string;
-          github_repo_id?: number;
-          id?: string;
-          is_private?: boolean;
-          primary_language?: string | null;
-          repository_id?: string;
-        };
+          analysis_id?: string
+          commit_sha?: string | null
+          created_at?: string
+          default_branch?: string | null
+          full_name?: string
+          github_repo_id?: number
+          id?: string
+          is_private?: boolean
+          primary_language?: string | null
+          repository_id?: string
+        }
         Relationships: [
           {
-            foreignKeyName: 'analysis_repositories_analysis_id_fkey';
-            columns: ['analysis_id'];
-            isOneToOne: false;
-            referencedRelation: 'analyses';
-            referencedColumns: ['id'];
+            foreignKeyName: "analysis_repositories_analysis_id_fkey"
+            columns: ["analysis_id"]
+            isOneToOne: false
+            referencedRelation: "analyses"
+            referencedColumns: ["id"]
           },
           {
-            foreignKeyName: 'analysis_repositories_repository_id_fkey';
-            columns: ['repository_id'];
-            isOneToOne: false;
-            referencedRelation: 'repositories';
-            referencedColumns: ['id'];
+            foreignKeyName: "analysis_repositories_repository_id_fkey"
+            columns: ["repository_id"]
+            isOneToOne: false
+            referencedRelation: "repositories"
+            referencedColumns: ["id"]
           },
-        ];
-      };
+        ]
+      }
+      analytics_events: {
+        Row: {
+          created_at: string
+          event_name: string
+          id: string
+          metadata: Json
+          profile_id: string
+        }
+        Insert: {
+          created_at?: string
+          event_name: string
+          id?: string
+          metadata?: Json
+          profile_id: string
+        }
+        Update: {
+          created_at?: string
+          event_name?: string
+          id?: string
+          metadata?: Json
+          profile_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "analytics_events_profile_id_fkey"
+            columns: ["profile_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       assessment_evidence: {
         Row: {
-          assessment_id: string;
-          created_at: string;
-          evidence_item_id: string;
-        };
+          assessment_id: string
+          created_at: string
+          evidence_item_id: string
+        }
         Insert: {
-          assessment_id: string;
-          created_at?: string;
-          evidence_item_id: string;
-        };
+          assessment_id: string
+          created_at?: string
+          evidence_item_id: string
+        }
         Update: {
-          assessment_id?: string;
-          created_at?: string;
-          evidence_item_id?: string;
-        };
+          assessment_id?: string
+          created_at?: string
+          evidence_item_id?: string
+        }
         Relationships: [
           {
-            foreignKeyName: 'assessment_evidence_assessment_id_fkey';
-            columns: ['assessment_id'];
-            isOneToOne: false;
-            referencedRelation: 'skill_assessments';
-            referencedColumns: ['id'];
+            foreignKeyName: "assessment_evidence_assessment_id_fkey"
+            columns: ["assessment_id"]
+            isOneToOne: false
+            referencedRelation: "skill_assessments"
+            referencedColumns: ["id"]
           },
           {
-            foreignKeyName: 'assessment_evidence_evidence_item_id_fkey';
-            columns: ['evidence_item_id'];
-            isOneToOne: false;
-            referencedRelation: 'evidence_items';
-            referencedColumns: ['id'];
+            foreignKeyName: "assessment_evidence_evidence_item_id_fkey"
+            columns: ["evidence_item_id"]
+            isOneToOne: false
+            referencedRelation: "evidence_items"
+            referencedColumns: ["id"]
           },
-        ];
-      };
+        ]
+      }
       audit_logs: {
         Row: {
-          action: string;
-          actor_profile_id: string | null;
-          created_at: string;
-          id: string;
-          metadata: Json;
-          target_id: string | null;
-          target_table: string | null;
-        };
+          action: string
+          actor_profile_id: string | null
+          created_at: string
+          id: string
+          metadata: Json
+          target_id: string | null
+          target_table: string | null
+        }
         Insert: {
-          action: string;
-          actor_profile_id?: string | null;
-          created_at?: string;
-          id?: string;
-          metadata?: Json;
-          target_id?: string | null;
-          target_table?: string | null;
-        };
+          action: string
+          actor_profile_id?: string | null
+          created_at?: string
+          id?: string
+          metadata?: Json
+          target_id?: string | null
+          target_table?: string | null
+        }
         Update: {
-          action?: string;
-          actor_profile_id?: string | null;
-          created_at?: string;
-          id?: string;
-          metadata?: Json;
-          target_id?: string | null;
-          target_table?: string | null;
-        };
+          action?: string
+          actor_profile_id?: string | null
+          created_at?: string
+          id?: string
+          metadata?: Json
+          target_id?: string | null
+          target_table?: string | null
+        }
         Relationships: [
           {
-            foreignKeyName: 'audit_logs_actor_profile_id_fkey';
-            columns: ['actor_profile_id'];
-            isOneToOne: false;
-            referencedRelation: 'profiles';
-            referencedColumns: ['id'];
+            foreignKeyName: "audit_logs_actor_profile_id_fkey"
+            columns: ["actor_profile_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
           },
-        ];
-      };
+        ]
+      }
       consent_records: {
         Row: {
-          consent_type: Database['public']['Enums']['consent_type'];
-          granted: boolean;
-          id: string;
-          profile_id: string;
-          recorded_at: string;
-        };
+          consent_type: Database["public"]["Enums"]["consent_type"]
+          granted: boolean
+          id: string
+          profile_id: string
+          recorded_at: string
+        }
         Insert: {
-          consent_type: Database['public']['Enums']['consent_type'];
-          granted: boolean;
-          id?: string;
-          profile_id: string;
-          recorded_at?: string;
-        };
+          consent_type: Database["public"]["Enums"]["consent_type"]
+          granted: boolean
+          id?: string
+          profile_id: string
+          recorded_at?: string
+        }
         Update: {
-          consent_type?: Database['public']['Enums']['consent_type'];
-          granted?: boolean;
-          id?: string;
-          profile_id?: string;
-          recorded_at?: string;
-        };
+          consent_type?: Database["public"]["Enums"]["consent_type"]
+          granted?: boolean
+          id?: string
+          profile_id?: string
+          recorded_at?: string
+        }
         Relationships: [
           {
-            foreignKeyName: 'consent_records_profile_id_fkey';
-            columns: ['profile_id'];
-            isOneToOne: false;
-            referencedRelation: 'profiles';
-            referencedColumns: ['id'];
+            foreignKeyName: "consent_records_profile_id_fkey"
+            columns: ["profile_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
           },
-        ];
-      };
+        ]
+      }
       contact_requests: {
         Row: {
-          created_at: string;
-          expires_at: string;
-          id: string;
-          profile_id: string;
-          recruiter_id: string;
-          responded_at: string | null;
-          role_context: string;
-          status: Database['public']['Enums']['contact_request_status'];
-          updated_at: string;
-        };
+          created_at: string
+          expires_at: string
+          id: string
+          profile_id: string
+          recruiter_id: string
+          responded_at: string | null
+          role_context: string
+          status: Database["public"]["Enums"]["contact_request_status"]
+          updated_at: string
+        }
         Insert: {
-          created_at?: string;
-          expires_at?: string;
-          id?: string;
-          profile_id: string;
-          recruiter_id: string;
-          responded_at?: string | null;
-          role_context: string;
-          status?: Database['public']['Enums']['contact_request_status'];
-          updated_at?: string;
-        };
+          created_at?: string
+          expires_at?: string
+          id?: string
+          profile_id: string
+          recruiter_id: string
+          responded_at?: string | null
+          role_context: string
+          status?: Database["public"]["Enums"]["contact_request_status"]
+          updated_at?: string
+        }
         Update: {
-          created_at?: string;
-          expires_at?: string;
-          id?: string;
-          profile_id?: string;
-          recruiter_id?: string;
-          responded_at?: string | null;
-          role_context?: string;
-          status?: Database['public']['Enums']['contact_request_status'];
-          updated_at?: string;
-        };
+          created_at?: string
+          expires_at?: string
+          id?: string
+          profile_id?: string
+          recruiter_id?: string
+          responded_at?: string | null
+          role_context?: string
+          status?: Database["public"]["Enums"]["contact_request_status"]
+          updated_at?: string
+        }
         Relationships: [
           {
-            foreignKeyName: 'contact_requests_profile_id_fkey';
-            columns: ['profile_id'];
-            isOneToOne: false;
-            referencedRelation: 'profiles';
-            referencedColumns: ['id'];
+            foreignKeyName: "contact_requests_profile_id_fkey"
+            columns: ["profile_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
           },
           {
-            foreignKeyName: 'contact_requests_recruiter_id_fkey';
-            columns: ['recruiter_id'];
-            isOneToOne: false;
-            referencedRelation: 'recruiters';
-            referencedColumns: ['id'];
+            foreignKeyName: "contact_requests_recruiter_id_fkey"
+            columns: ["recruiter_id"]
+            isOneToOne: false
+            referencedRelation: "recruiters"
+            referencedColumns: ["id"]
           },
-        ];
-      };
+        ]
+      }
       evidence_items: {
         Row: {
-          author_login: string | null;
-          confidence: number;
-          created_at: string;
-          evidence_type: Database['public']['Enums']['evidence_type'];
-          external_url: string | null;
-          github_id: string | null;
-          id: string;
-          occurred_at: string | null;
-          payload: Json;
-          profile_id: string;
-          repository_id: string | null;
-          source_type: Database['public']['Enums']['evidence_source_type'] | null;
-          storage_path: string | null;
-          title: string;
-          updated_at: string;
-          verified: boolean;
-        };
+          author_login: string | null
+          confidence: number
+          created_at: string
+          evidence_type: Database["public"]["Enums"]["evidence_type"]
+          external_url: string | null
+          github_id: string | null
+          id: string
+          occurred_at: string | null
+          payload: Json
+          profile_id: string
+          repository_id: string | null
+          source_type:
+            | Database["public"]["Enums"]["evidence_source_type"]
+            | null
+          storage_path: string | null
+          title: string
+          updated_at: string
+          verified: boolean
+        }
         Insert: {
-          author_login?: string | null;
-          confidence?: number;
-          created_at?: string;
-          evidence_type: Database['public']['Enums']['evidence_type'];
-          external_url?: string | null;
-          github_id?: string | null;
-          id?: string;
-          occurred_at?: string | null;
-          payload?: Json;
-          profile_id: string;
-          repository_id?: string | null;
-          source_type?: Database['public']['Enums']['evidence_source_type'] | null;
-          storage_path?: string | null;
-          title: string;
-          updated_at?: string;
-          verified?: boolean;
-        };
+          author_login?: string | null
+          confidence?: number
+          created_at?: string
+          evidence_type: Database["public"]["Enums"]["evidence_type"]
+          external_url?: string | null
+          github_id?: string | null
+          id?: string
+          occurred_at?: string | null
+          payload?: Json
+          profile_id: string
+          repository_id?: string | null
+          source_type?:
+            | Database["public"]["Enums"]["evidence_source_type"]
+            | null
+          storage_path?: string | null
+          title: string
+          updated_at?: string
+          verified?: boolean
+        }
         Update: {
-          author_login?: string | null;
-          confidence?: number;
-          created_at?: string;
-          evidence_type?: Database['public']['Enums']['evidence_type'];
-          external_url?: string | null;
-          github_id?: string | null;
-          id?: string;
-          occurred_at?: string | null;
-          payload?: Json;
-          profile_id?: string;
-          repository_id?: string | null;
-          source_type?: Database['public']['Enums']['evidence_source_type'] | null;
-          storage_path?: string | null;
-          title?: string;
-          updated_at?: string;
-          verified?: boolean;
-        };
+          author_login?: string | null
+          confidence?: number
+          created_at?: string
+          evidence_type?: Database["public"]["Enums"]["evidence_type"]
+          external_url?: string | null
+          github_id?: string | null
+          id?: string
+          occurred_at?: string | null
+          payload?: Json
+          profile_id?: string
+          repository_id?: string | null
+          source_type?:
+            | Database["public"]["Enums"]["evidence_source_type"]
+            | null
+          storage_path?: string | null
+          title?: string
+          updated_at?: string
+          verified?: boolean
+        }
         Relationships: [
           {
-            foreignKeyName: 'evidence_items_profile_id_fkey';
-            columns: ['profile_id'];
-            isOneToOne: false;
-            referencedRelation: 'profiles';
-            referencedColumns: ['id'];
+            foreignKeyName: "evidence_items_profile_id_fkey"
+            columns: ["profile_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
           },
           {
-            foreignKeyName: 'evidence_items_repository_id_fkey';
-            columns: ['repository_id'];
-            isOneToOne: false;
-            referencedRelation: 'repositories';
-            referencedColumns: ['id'];
+            foreignKeyName: "evidence_items_repository_id_fkey"
+            columns: ["repository_id"]
+            isOneToOne: false
+            referencedRelation: "repositories"
+            referencedColumns: ["id"]
           },
-        ];
-      };
+        ]
+      }
       github_accounts: {
         Row: {
-          connected_at: string;
-          created_at: string;
-          github_user_id: number;
-          github_username: string;
-          id: string;
-          private_repo_access_granted_at: string | null;
-          profile_id: string;
-          updated_at: string;
-        };
+          connected_at: string
+          created_at: string
+          github_user_id: number
+          github_username: string
+          id: string
+          private_repo_access_granted_at: string | null
+          profile_id: string
+          updated_at: string
+        }
         Insert: {
-          connected_at?: string;
-          created_at?: string;
-          github_user_id: number;
-          github_username: string;
-          id?: string;
-          private_repo_access_granted_at?: string | null;
-          profile_id: string;
-          updated_at?: string;
-        };
+          connected_at?: string
+          created_at?: string
+          github_user_id: number
+          github_username: string
+          id?: string
+          private_repo_access_granted_at?: string | null
+          profile_id: string
+          updated_at?: string
+        }
         Update: {
-          connected_at?: string;
-          created_at?: string;
-          github_user_id?: number;
-          github_username?: string;
-          id?: string;
-          private_repo_access_granted_at?: string | null;
-          profile_id?: string;
-          updated_at?: string;
-        };
+          connected_at?: string
+          created_at?: string
+          github_user_id?: number
+          github_username?: string
+          id?: string
+          private_repo_access_granted_at?: string | null
+          profile_id?: string
+          updated_at?: string
+        }
         Relationships: [
           {
-            foreignKeyName: 'github_accounts_profile_id_fkey';
-            columns: ['profile_id'];
-            isOneToOne: true;
-            referencedRelation: 'profiles';
-            referencedColumns: ['id'];
+            foreignKeyName: "github_accounts_profile_id_fkey"
+            columns: ["profile_id"]
+            isOneToOne: true
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
           },
-        ];
-      };
+        ]
+      }
       github_credentials: {
         Row: {
-          access_token_encrypted: string;
-          captured_at: string;
-          created_at: string;
-          github_account_id: string;
-          revoked_at: string | null;
-          token_scopes: string | null;
-          updated_at: string;
-        };
+          access_token_encrypted: string
+          captured_at: string
+          created_at: string
+          github_account_id: string
+          revoked_at: string | null
+          token_scopes: string | null
+          updated_at: string
+        }
         Insert: {
-          access_token_encrypted: string;
-          captured_at?: string;
-          created_at?: string;
-          github_account_id: string;
-          revoked_at?: string | null;
-          token_scopes?: string | null;
-          updated_at?: string;
-        };
+          access_token_encrypted: string
+          captured_at?: string
+          created_at?: string
+          github_account_id: string
+          revoked_at?: string | null
+          token_scopes?: string | null
+          updated_at?: string
+        }
         Update: {
-          access_token_encrypted?: string;
-          captured_at?: string;
-          created_at?: string;
-          github_account_id?: string;
-          revoked_at?: string | null;
-          token_scopes?: string | null;
-          updated_at?: string;
-        };
+          access_token_encrypted?: string
+          captured_at?: string
+          created_at?: string
+          github_account_id?: string
+          revoked_at?: string | null
+          token_scopes?: string | null
+          updated_at?: string
+        }
         Relationships: [
           {
-            foreignKeyName: 'github_credentials_github_account_id_fkey';
-            columns: ['github_account_id'];
-            isOneToOne: true;
-            referencedRelation: 'github_accounts';
-            referencedColumns: ['id'];
+            foreignKeyName: "github_credentials_github_account_id_fkey"
+            columns: ["github_account_id"]
+            isOneToOne: true
+            referencedRelation: "github_accounts"
+            referencedColumns: ["id"]
           },
-        ];
-      };
+        ]
+      }
       organizations: {
         Row: {
-          created_at: string;
-          id: string;
-          name: string;
-          size_band: string | null;
-          slug: string;
-          stage: string | null;
-          updated_at: string;
-        };
+          created_at: string
+          id: string
+          name: string
+          size_band: string | null
+          slug: string
+          stage: string | null
+          updated_at: string
+        }
         Insert: {
-          created_at?: string;
-          id?: string;
-          name: string;
-          size_band?: string | null;
-          slug: string;
-          stage?: string | null;
-          updated_at?: string;
-        };
+          created_at?: string
+          id?: string
+          name: string
+          size_band?: string | null
+          slug: string
+          stage?: string | null
+          updated_at?: string
+        }
         Update: {
-          created_at?: string;
-          id?: string;
-          name?: string;
-          size_band?: string | null;
-          slug?: string;
-          stage?: string | null;
-          updated_at?: string;
-        };
-        Relationships: [];
-      };
+          created_at?: string
+          id?: string
+          name?: string
+          size_band?: string | null
+          slug?: string
+          stage?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
-          avatar_url: string | null;
-          created_at: string;
-          deleted_at: string | null;
-          full_name: string | null;
-          id: string;
-          role: Database['public']['Enums']['user_role'];
-          updated_at: string;
-        };
+          avatar_url: string | null
+          created_at: string
+          deleted_at: string | null
+          full_name: string | null
+          id: string
+          role: Database["public"]["Enums"]["user_role"]
+          updated_at: string
+        }
         Insert: {
-          avatar_url?: string | null;
-          created_at?: string;
-          deleted_at?: string | null;
-          full_name?: string | null;
-          id: string;
-          role: Database['public']['Enums']['user_role'];
-          updated_at?: string;
-        };
+          avatar_url?: string | null
+          created_at?: string
+          deleted_at?: string | null
+          full_name?: string | null
+          id: string
+          role: Database["public"]["Enums"]["user_role"]
+          updated_at?: string
+        }
         Update: {
-          avatar_url?: string | null;
-          created_at?: string;
-          deleted_at?: string | null;
-          full_name?: string | null;
-          id?: string;
-          role?: Database['public']['Enums']['user_role'];
-          updated_at?: string;
-        };
-        Relationships: [];
-      };
+          avatar_url?: string | null
+          created_at?: string
+          deleted_at?: string | null
+          full_name?: string | null
+          id?: string
+          role?: Database["public"]["Enums"]["user_role"]
+          updated_at?: string
+        }
+        Relationships: []
+      }
       recruiters: {
         Row: {
-          created_at: string;
-          id: string;
-          invited_at: string;
-          organization_id: string;
-          title: string | null;
-          updated_at: string;
-        };
+          created_at: string
+          id: string
+          invited_at: string
+          organization_id: string
+          title: string | null
+          updated_at: string
+        }
         Insert: {
-          created_at?: string;
-          id: string;
-          invited_at?: string;
-          organization_id: string;
-          title?: string | null;
-          updated_at?: string;
-        };
+          created_at?: string
+          id: string
+          invited_at?: string
+          organization_id: string
+          title?: string | null
+          updated_at?: string
+        }
         Update: {
-          created_at?: string;
-          id?: string;
-          invited_at?: string;
-          organization_id?: string;
-          title?: string | null;
-          updated_at?: string;
-        };
+          created_at?: string
+          id?: string
+          invited_at?: string
+          organization_id?: string
+          title?: string | null
+          updated_at?: string
+        }
         Relationships: [
           {
-            foreignKeyName: 'recruiters_id_fkey';
-            columns: ['id'];
-            isOneToOne: true;
-            referencedRelation: 'profiles';
-            referencedColumns: ['id'];
+            foreignKeyName: "recruiters_id_fkey"
+            columns: ["id"]
+            isOneToOne: true
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
           },
           {
-            foreignKeyName: 'recruiters_organization_id_fkey';
-            columns: ['organization_id'];
-            isOneToOne: false;
-            referencedRelation: 'organizations';
-            referencedColumns: ['id'];
+            foreignKeyName: "recruiters_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
           },
-        ];
-      };
+        ]
+      }
       repositories: {
         Row: {
-          created_at: string;
-          default_branch: string | null;
-          deployed_url: string | null;
-          deployed_url_reachable: boolean | null;
-          description: string | null;
-          full_name: string;
-          github_account_id: string;
-          github_repo_id: number;
-          github_updated_at: string | null;
-          html_url: string | null;
-          id: string;
-          included: boolean;
-          is_archived: boolean;
-          is_fork: boolean;
-          is_private: boolean;
-          primary_language: string | null;
-          stargazers_count: number;
-          updated_at: string;
-        };
+          created_at: string
+          default_branch: string | null
+          deployed_url: string | null
+          deployed_url_reachable: boolean | null
+          description: string | null
+          full_name: string
+          github_account_id: string
+          github_repo_id: number
+          github_updated_at: string | null
+          html_url: string | null
+          id: string
+          included: boolean
+          is_archived: boolean
+          is_fork: boolean
+          is_private: boolean
+          primary_language: string | null
+          stargazers_count: number
+          updated_at: string
+        }
         Insert: {
-          created_at?: string;
-          default_branch?: string | null;
-          deployed_url?: string | null;
-          deployed_url_reachable?: boolean | null;
-          description?: string | null;
-          full_name: string;
-          github_account_id: string;
-          github_repo_id: number;
-          github_updated_at?: string | null;
-          html_url?: string | null;
-          id?: string;
-          included?: boolean;
-          is_archived?: boolean;
-          is_fork?: boolean;
-          is_private?: boolean;
-          primary_language?: string | null;
-          stargazers_count?: number;
-          updated_at?: string;
-        };
+          created_at?: string
+          default_branch?: string | null
+          deployed_url?: string | null
+          deployed_url_reachable?: boolean | null
+          description?: string | null
+          full_name: string
+          github_account_id: string
+          github_repo_id: number
+          github_updated_at?: string | null
+          html_url?: string | null
+          id?: string
+          included?: boolean
+          is_archived?: boolean
+          is_fork?: boolean
+          is_private?: boolean
+          primary_language?: string | null
+          stargazers_count?: number
+          updated_at?: string
+        }
         Update: {
-          created_at?: string;
-          default_branch?: string | null;
-          deployed_url?: string | null;
-          deployed_url_reachable?: boolean | null;
-          description?: string | null;
-          full_name?: string;
-          github_account_id?: string;
-          github_repo_id?: number;
-          github_updated_at?: string | null;
-          html_url?: string | null;
-          id?: string;
-          included?: boolean;
-          is_archived?: boolean;
-          is_fork?: boolean;
-          is_private?: boolean;
-          primary_language?: string | null;
-          stargazers_count?: number;
-          updated_at?: string;
-        };
+          created_at?: string
+          default_branch?: string | null
+          deployed_url?: string | null
+          deployed_url_reachable?: boolean | null
+          description?: string | null
+          full_name?: string
+          github_account_id?: string
+          github_repo_id?: number
+          github_updated_at?: string | null
+          html_url?: string | null
+          id?: string
+          included?: boolean
+          is_archived?: boolean
+          is_fork?: boolean
+          is_private?: boolean
+          primary_language?: string | null
+          stargazers_count?: number
+          updated_at?: string
+        }
         Relationships: [
           {
-            foreignKeyName: 'repositories_github_account_id_fkey';
-            columns: ['github_account_id'];
-            isOneToOne: false;
-            referencedRelation: 'github_accounts';
-            referencedColumns: ['id'];
+            foreignKeyName: "repositories_github_account_id_fkey"
+            columns: ["github_account_id"]
+            isOneToOne: false
+            referencedRelation: "github_accounts"
+            referencedColumns: ["id"]
           },
-        ];
-      };
+        ]
+      }
       saved_candidates: {
         Row: {
-          created_at: string;
-          id: string;
-          note: string | null;
-          profile_id: string;
-          recruiter_id: string;
-          updated_at: string;
-        };
+          created_at: string
+          id: string
+          note: string | null
+          profile_id: string
+          recruiter_id: string
+          updated_at: string
+        }
         Insert: {
-          created_at?: string;
-          id?: string;
-          note?: string | null;
-          profile_id: string;
-          recruiter_id: string;
-          updated_at?: string;
-        };
+          created_at?: string
+          id?: string
+          note?: string | null
+          profile_id: string
+          recruiter_id: string
+          updated_at?: string
+        }
         Update: {
-          created_at?: string;
-          id?: string;
-          note?: string | null;
-          profile_id?: string;
-          recruiter_id?: string;
-          updated_at?: string;
-        };
+          created_at?: string
+          id?: string
+          note?: string | null
+          profile_id?: string
+          recruiter_id?: string
+          updated_at?: string
+        }
         Relationships: [
           {
-            foreignKeyName: 'saved_candidates_profile_id_fkey';
-            columns: ['profile_id'];
-            isOneToOne: false;
-            referencedRelation: 'profiles';
-            referencedColumns: ['id'];
+            foreignKeyName: "saved_candidates_profile_id_fkey"
+            columns: ["profile_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
           },
           {
-            foreignKeyName: 'saved_candidates_recruiter_id_fkey';
-            columns: ['recruiter_id'];
-            isOneToOne: false;
-            referencedRelation: 'recruiters';
-            referencedColumns: ['id'];
+            foreignKeyName: "saved_candidates_recruiter_id_fkey"
+            columns: ["recruiter_id"]
+            isOneToOne: false
+            referencedRelation: "recruiters"
+            referencedColumns: ["id"]
           },
-        ];
-      };
+        ]
+      }
       skill_assessments: {
         Row: {
-          analysis_id: string;
-          confidence: Database['public']['Enums']['confidence_level'];
-          created_at: string;
-          growth_areas: string[];
-          id: string;
-          level: Database['public']['Enums']['assessment_level'];
-          profile_id: string;
-          reasoning: string;
-          skill_id: string;
-          strengths: string[];
-          superseded_by: string | null;
-          version: number;
-        };
+          analysis_id: string
+          confidence: Database["public"]["Enums"]["confidence_level"]
+          created_at: string
+          growth_areas: string[]
+          id: string
+          level: Database["public"]["Enums"]["assessment_level"]
+          profile_id: string
+          reasoning: string
+          skill_id: string
+          strengths: string[]
+          superseded_by: string | null
+          version: number
+        }
         Insert: {
-          analysis_id: string;
-          confidence: Database['public']['Enums']['confidence_level'];
-          created_at?: string;
-          growth_areas?: string[];
-          id?: string;
-          level: Database['public']['Enums']['assessment_level'];
-          profile_id: string;
-          reasoning: string;
-          skill_id: string;
-          strengths?: string[];
-          superseded_by?: string | null;
-          version: number;
-        };
+          analysis_id: string
+          confidence: Database["public"]["Enums"]["confidence_level"]
+          created_at?: string
+          growth_areas?: string[]
+          id?: string
+          level: Database["public"]["Enums"]["assessment_level"]
+          profile_id: string
+          reasoning: string
+          skill_id: string
+          strengths?: string[]
+          superseded_by?: string | null
+          version: number
+        }
         Update: {
-          analysis_id?: string;
-          confidence?: Database['public']['Enums']['confidence_level'];
-          created_at?: string;
-          growth_areas?: string[];
-          id?: string;
-          level?: Database['public']['Enums']['assessment_level'];
-          profile_id?: string;
-          reasoning?: string;
-          skill_id?: string;
-          strengths?: string[];
-          superseded_by?: string | null;
-          version?: number;
-        };
+          analysis_id?: string
+          confidence?: Database["public"]["Enums"]["confidence_level"]
+          created_at?: string
+          growth_areas?: string[]
+          id?: string
+          level?: Database["public"]["Enums"]["assessment_level"]
+          profile_id?: string
+          reasoning?: string
+          skill_id?: string
+          strengths?: string[]
+          superseded_by?: string | null
+          version?: number
+        }
         Relationships: [
           {
-            foreignKeyName: 'skill_assessments_analysis_id_fkey';
-            columns: ['analysis_id'];
-            isOneToOne: false;
-            referencedRelation: 'analyses';
-            referencedColumns: ['id'];
+            foreignKeyName: "skill_assessments_analysis_id_fkey"
+            columns: ["analysis_id"]
+            isOneToOne: false
+            referencedRelation: "analyses"
+            referencedColumns: ["id"]
           },
           {
-            foreignKeyName: 'skill_assessments_profile_id_fkey';
-            columns: ['profile_id'];
-            isOneToOne: false;
-            referencedRelation: 'profiles';
-            referencedColumns: ['id'];
+            foreignKeyName: "skill_assessments_profile_id_fkey"
+            columns: ["profile_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
           },
           {
-            foreignKeyName: 'skill_assessments_skill_id_fkey';
-            columns: ['skill_id'];
-            isOneToOne: false;
-            referencedRelation: 'skills';
-            referencedColumns: ['id'];
+            foreignKeyName: "skill_assessments_skill_id_fkey"
+            columns: ["skill_id"]
+            isOneToOne: false
+            referencedRelation: "skills"
+            referencedColumns: ["id"]
           },
           {
-            foreignKeyName: 'skill_assessments_superseded_by_fkey';
-            columns: ['superseded_by'];
-            isOneToOne: false;
-            referencedRelation: 'skill_assessments';
-            referencedColumns: ['id'];
+            foreignKeyName: "skill_assessments_superseded_by_fkey"
+            columns: ["superseded_by"]
+            isOneToOne: false
+            referencedRelation: "skill_assessments"
+            referencedColumns: ["id"]
           },
-        ];
-      };
+        ]
+      }
       skills: {
         Row: {
-          applies_to_backend: boolean;
-          applies_to_fullstack: boolean;
-          created_at: string;
-          description: string | null;
-          display_order: number;
-          id: string;
-          name: string;
-          slug: string;
-          updated_at: string;
-        };
+          applies_to_backend: boolean
+          applies_to_fullstack: boolean
+          created_at: string
+          description: string | null
+          display_order: number
+          id: string
+          name: string
+          slug: string
+          updated_at: string
+        }
         Insert: {
-          applies_to_backend?: boolean;
-          applies_to_fullstack?: boolean;
-          created_at?: string;
-          description?: string | null;
-          display_order: number;
-          id?: string;
-          name: string;
-          slug: string;
-          updated_at?: string;
-        };
+          applies_to_backend?: boolean
+          applies_to_fullstack?: boolean
+          created_at?: string
+          description?: string | null
+          display_order: number
+          id?: string
+          name: string
+          slug: string
+          updated_at?: string
+        }
         Update: {
-          applies_to_backend?: boolean;
-          applies_to_fullstack?: boolean;
-          created_at?: string;
-          description?: string | null;
-          display_order?: number;
-          id?: string;
-          name?: string;
-          slug?: string;
-          updated_at?: string;
-        };
-        Relationships: [];
-      };
+          applies_to_backend?: boolean
+          applies_to_fullstack?: boolean
+          created_at?: string
+          description?: string | null
+          display_order?: number
+          id?: string
+          name?: string
+          slug?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       view_events: {
         Row: {
-          id: string;
-          profile_id: string;
-          source: string;
-          viewed_at: string;
-          viewer_recruiter_id: string | null;
-        };
+          id: string
+          profile_id: string
+          source: string
+          viewed_at: string
+          viewer_recruiter_id: string | null
+        }
         Insert: {
-          id?: string;
-          profile_id: string;
-          source?: string;
-          viewed_at?: string;
-          viewer_recruiter_id?: string | null;
-        };
+          id?: string
+          profile_id: string
+          source?: string
+          viewed_at?: string
+          viewer_recruiter_id?: string | null
+        }
         Update: {
-          id?: string;
-          profile_id?: string;
-          source?: string;
-          viewed_at?: string;
-          viewer_recruiter_id?: string | null;
-        };
+          id?: string
+          profile_id?: string
+          source?: string
+          viewed_at?: string
+          viewer_recruiter_id?: string | null
+        }
         Relationships: [
           {
-            foreignKeyName: 'view_events_profile_id_fkey';
-            columns: ['profile_id'];
-            isOneToOne: false;
-            referencedRelation: 'profiles';
-            referencedColumns: ['id'];
+            foreignKeyName: "view_events_profile_id_fkey"
+            columns: ["profile_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
           },
           {
-            foreignKeyName: 'view_events_viewer_recruiter_id_fkey';
-            columns: ['viewer_recruiter_id'];
-            isOneToOne: false;
-            referencedRelation: 'recruiters';
-            referencedColumns: ['id'];
+            foreignKeyName: "view_events_viewer_recruiter_id_fkey"
+            columns: ["viewer_recruiter_id"]
+            isOneToOne: false
+            referencedRelation: "recruiters"
+            referencedColumns: ["id"]
           },
-        ];
-      };
-    };
+        ]
+      }
+    }
     Views: {
-      [_ in never]: never;
-    };
+      [_ in never]: never
+    }
     Functions: {
-      claim_next_queued_analysis: { Args: never; Returns: string };
+      claim_next_queued_analysis: { Args: never; Returns: string }
       current_consent: {
         Args: {
-          p_profile_id: string;
-          p_type: Database['public']['Enums']['consent_type'];
-        };
-        Returns: boolean;
-      };
-      current_recruiter_organization_id: { Args: never; Returns: string };
+          p_profile_id: string
+          p_type: Database["public"]["Enums"]["consent_type"]
+        }
+        Returns: boolean
+      }
+      current_recruiter_organization_id: { Args: never; Returns: string }
       current_user_role: {
-        Args: never;
-        Returns: Database['public']['Enums']['user_role'];
-      };
+        Args: never
+        Returns: Database["public"]["Enums"]["user_role"]
+      }
       enqueue_analysis_with_snapshot: {
-        Args: { p_commit_shas?: Json };
-        Returns: string;
-      };
-      is_recruiter_visible: { Args: { p_profile_id: string }; Returns: boolean };
+        Args: { p_commit_shas?: Json }
+        Returns: string
+      }
+      is_recruiter_visible: { Args: { p_profile_id: string }; Returns: boolean }
       persist_skill_assessment: {
         Args: {
-          p_analysis_id: string;
-          p_confidence: Database['public']['Enums']['confidence_level'];
-          p_evidence_item_ids: string[];
-          p_growth_areas: string[];
-          p_level: Database['public']['Enums']['assessment_level'];
-          p_reasoning: string;
-          p_skill_slug: string;
-          p_strengths: string[];
-        };
-        Returns: string;
-      };
-    };
+          p_analysis_id: string
+          p_confidence: Database["public"]["Enums"]["confidence_level"]
+          p_evidence_item_ids: string[]
+          p_growth_areas: string[]
+          p_level: Database["public"]["Enums"]["assessment_level"]
+          p_reasoning: string
+          p_skill_slug: string
+          p_strengths: string[]
+        }
+        Returns: string
+      }
+    }
     Enums: {
-      analysis_status: 'queued' | 'processing' | 'completed' | 'failed' | 'partial';
-      assessment_level: 'strong' | 'developing' | 'not_yet_assessed';
-      confidence_level: 'high' | 'moderate' | 'preliminary';
-      consent_type: 'analysis' | 'visibility';
-      contact_request_status: 'pending' | 'accepted' | 'declined' | 'expired';
+      analysis_status:
+        | "queued"
+        | "processing"
+        | "completed"
+        | "failed"
+        | "partial"
+      assessment_level: "strong" | "developing" | "not_yet_assessed"
+      confidence_level: "high" | "moderate" | "preliminary"
+      consent_type: "analysis" | "visibility"
+      contact_request_status: "pending" | "accepted" | "declined" | "expired"
       evidence_source_type:
-        'repository' | 'commit' | 'pull_request' | 'review' | 'issue' | 'release' | 'contributor';
-      evidence_type: 'github_repository' | 'resume_claim' | 'certificate' | 'deployment_url';
-      user_role: 'student' | 'recruiter' | 'admin';
-    };
+        | "repository"
+        | "commit"
+        | "pull_request"
+        | "review"
+        | "issue"
+        | "release"
+        | "contributor"
+      evidence_type:
+        | "github_repository"
+        | "resume_claim"
+        | "certificate"
+        | "deployment_url"
+      user_role: "student" | "recruiter" | "admin"
+    }
     CompositeTypes: {
-      [_ in never]: never;
-    };
-  };
-};
+      [_ in never]: never
+    }
+  }
+}
 
-type DatabaseWithoutInternals = Omit<Database, '__InternalSupabase'>;
+type DatabaseWithoutInternals = Omit<Database, "__InternalSupabase">
 
-type DefaultSchema = DatabaseWithoutInternals[Extract<keyof Database, 'public'>];
+type DefaultSchema = DatabaseWithoutInternals[Extract<keyof Database, "public">]
 
 export type Tables<
   DefaultSchemaTableNameOrOptions extends
-    | keyof (DefaultSchema['Tables'] & DefaultSchema['Views'])
+    | keyof (DefaultSchema["Tables"] & DefaultSchema["Views"])
     | { schema: keyof DatabaseWithoutInternals },
-  TableName extends (DefaultSchemaTableNameOrOptions extends {
-    schema: keyof DatabaseWithoutInternals;
+  TableName extends DefaultSchemaTableNameOrOptions extends {
+    schema: keyof DatabaseWithoutInternals
   }
-    ? keyof (DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions['schema']]['Tables'] &
-        DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions['schema']]['Views'])
-    : never) = never,
+    ? keyof (DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"] &
+        DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Views"])
+    : never = never,
 > = DefaultSchemaTableNameOrOptions extends {
-  schema: keyof DatabaseWithoutInternals;
+  schema: keyof DatabaseWithoutInternals
 }
-  ? (DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions['schema']]['Tables'] &
-      DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions['schema']]['Views'])[TableName] extends {
-      Row: infer R;
+  ? (DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"] &
+      DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Views"])[TableName] extends {
+      Row: infer R
     }
     ? R
     : never
-  : DefaultSchemaTableNameOrOptions extends keyof (DefaultSchema['Tables'] & DefaultSchema['Views'])
-    ? (DefaultSchema['Tables'] & DefaultSchema['Views'])[DefaultSchemaTableNameOrOptions] extends {
-        Row: infer R;
+  : DefaultSchemaTableNameOrOptions extends keyof (DefaultSchema["Tables"] &
+        DefaultSchema["Views"])
+    ? (DefaultSchema["Tables"] &
+        DefaultSchema["Views"])[DefaultSchemaTableNameOrOptions] extends {
+        Row: infer R
       }
       ? R
       : never
-    : never;
+    : never
 
 export type TablesInsert<
   DefaultSchemaTableNameOrOptions extends
-    keyof DefaultSchema['Tables'] | { schema: keyof DatabaseWithoutInternals },
-  TableName extends (DefaultSchemaTableNameOrOptions extends {
-    schema: keyof DatabaseWithoutInternals;
+    | keyof DefaultSchema["Tables"]
+    | { schema: keyof DatabaseWithoutInternals },
+  TableName extends DefaultSchemaTableNameOrOptions extends {
+    schema: keyof DatabaseWithoutInternals
   }
-    ? keyof DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions['schema']]['Tables']
-    : never) = never,
+    ? keyof DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"]
+    : never = never,
 > = DefaultSchemaTableNameOrOptions extends {
-  schema: keyof DatabaseWithoutInternals;
+  schema: keyof DatabaseWithoutInternals
 }
-  ? DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions['schema']]['Tables'][TableName] extends {
-      Insert: infer I;
+  ? DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"][TableName] extends {
+      Insert: infer I
     }
     ? I
     : never
-  : DefaultSchemaTableNameOrOptions extends keyof DefaultSchema['Tables']
-    ? DefaultSchema['Tables'][DefaultSchemaTableNameOrOptions] extends {
-        Insert: infer I;
+  : DefaultSchemaTableNameOrOptions extends keyof DefaultSchema["Tables"]
+    ? DefaultSchema["Tables"][DefaultSchemaTableNameOrOptions] extends {
+        Insert: infer I
       }
       ? I
       : never
-    : never;
+    : never
 
 export type TablesUpdate<
   DefaultSchemaTableNameOrOptions extends
-    keyof DefaultSchema['Tables'] | { schema: keyof DatabaseWithoutInternals },
-  TableName extends (DefaultSchemaTableNameOrOptions extends {
-    schema: keyof DatabaseWithoutInternals;
+    | keyof DefaultSchema["Tables"]
+    | { schema: keyof DatabaseWithoutInternals },
+  TableName extends DefaultSchemaTableNameOrOptions extends {
+    schema: keyof DatabaseWithoutInternals
   }
-    ? keyof DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions['schema']]['Tables']
-    : never) = never,
+    ? keyof DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"]
+    : never = never,
 > = DefaultSchemaTableNameOrOptions extends {
-  schema: keyof DatabaseWithoutInternals;
+  schema: keyof DatabaseWithoutInternals
 }
-  ? DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions['schema']]['Tables'][TableName] extends {
-      Update: infer U;
+  ? DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"][TableName] extends {
+      Update: infer U
     }
     ? U
     : never
-  : DefaultSchemaTableNameOrOptions extends keyof DefaultSchema['Tables']
-    ? DefaultSchema['Tables'][DefaultSchemaTableNameOrOptions] extends {
-        Update: infer U;
+  : DefaultSchemaTableNameOrOptions extends keyof DefaultSchema["Tables"]
+    ? DefaultSchema["Tables"][DefaultSchemaTableNameOrOptions] extends {
+        Update: infer U
       }
       ? U
       : never
-    : never;
+    : never
 
 export type Enums<
   DefaultSchemaEnumNameOrOptions extends
-    keyof DefaultSchema['Enums'] | { schema: keyof DatabaseWithoutInternals },
-  EnumName extends (DefaultSchemaEnumNameOrOptions extends {
-    schema: keyof DatabaseWithoutInternals;
+    | keyof DefaultSchema["Enums"]
+    | { schema: keyof DatabaseWithoutInternals },
+  EnumName extends DefaultSchemaEnumNameOrOptions extends {
+    schema: keyof DatabaseWithoutInternals
   }
-    ? keyof DatabaseWithoutInternals[DefaultSchemaEnumNameOrOptions['schema']]['Enums']
-    : never) = never,
+    ? keyof DatabaseWithoutInternals[DefaultSchemaEnumNameOrOptions["schema"]]["Enums"]
+    : never = never,
 > = DefaultSchemaEnumNameOrOptions extends {
-  schema: keyof DatabaseWithoutInternals;
+  schema: keyof DatabaseWithoutInternals
 }
-  ? DatabaseWithoutInternals[DefaultSchemaEnumNameOrOptions['schema']]['Enums'][EnumName]
-  : DefaultSchemaEnumNameOrOptions extends keyof DefaultSchema['Enums']
-    ? DefaultSchema['Enums'][DefaultSchemaEnumNameOrOptions]
-    : never;
+  ? DatabaseWithoutInternals[DefaultSchemaEnumNameOrOptions["schema"]]["Enums"][EnumName]
+  : DefaultSchemaEnumNameOrOptions extends keyof DefaultSchema["Enums"]
+    ? DefaultSchema["Enums"][DefaultSchemaEnumNameOrOptions]
+    : never
 
 export type CompositeTypes<
   PublicCompositeTypeNameOrOptions extends
-    keyof DefaultSchema['CompositeTypes'] | { schema: keyof DatabaseWithoutInternals },
-  CompositeTypeName extends (PublicCompositeTypeNameOrOptions extends {
-    schema: keyof DatabaseWithoutInternals;
+    | keyof DefaultSchema["CompositeTypes"]
+    | { schema: keyof DatabaseWithoutInternals },
+  CompositeTypeName extends PublicCompositeTypeNameOrOptions extends {
+    schema: keyof DatabaseWithoutInternals
   }
-    ? keyof DatabaseWithoutInternals[PublicCompositeTypeNameOrOptions['schema']]['CompositeTypes']
-    : never) = never,
+    ? keyof DatabaseWithoutInternals[PublicCompositeTypeNameOrOptions["schema"]]["CompositeTypes"]
+    : never = never,
 > = PublicCompositeTypeNameOrOptions extends {
-  schema: keyof DatabaseWithoutInternals;
+  schema: keyof DatabaseWithoutInternals
 }
-  ? DatabaseWithoutInternals[PublicCompositeTypeNameOrOptions['schema']]['CompositeTypes'][CompositeTypeName]
-  : PublicCompositeTypeNameOrOptions extends keyof DefaultSchema['CompositeTypes']
-    ? DefaultSchema['CompositeTypes'][PublicCompositeTypeNameOrOptions]
-    : never;
+  ? DatabaseWithoutInternals[PublicCompositeTypeNameOrOptions["schema"]]["CompositeTypes"][CompositeTypeName]
+  : PublicCompositeTypeNameOrOptions extends keyof DefaultSchema["CompositeTypes"]
+    ? DefaultSchema["CompositeTypes"][PublicCompositeTypeNameOrOptions]
+    : never
 
 export const Constants = {
   public: {
     Enums: {
-      analysis_status: ['queued', 'processing', 'completed', 'failed', 'partial'],
-      assessment_level: ['strong', 'developing', 'not_yet_assessed'],
-      confidence_level: ['high', 'moderate', 'preliminary'],
-      consent_type: ['analysis', 'visibility'],
-      contact_request_status: ['pending', 'accepted', 'declined', 'expired'],
-      evidence_source_type: [
-        'repository',
-        'commit',
-        'pull_request',
-        'review',
-        'issue',
-        'release',
-        'contributor',
+      analysis_status: [
+        "queued",
+        "processing",
+        "completed",
+        "failed",
+        "partial",
       ],
-      evidence_type: ['github_repository', 'resume_claim', 'certificate', 'deployment_url'],
-      user_role: ['student', 'recruiter', 'admin'],
+      assessment_level: ["strong", "developing", "not_yet_assessed"],
+      confidence_level: ["high", "moderate", "preliminary"],
+      consent_type: ["analysis", "visibility"],
+      contact_request_status: ["pending", "accepted", "declined", "expired"],
+      evidence_source_type: [
+        "repository",
+        "commit",
+        "pull_request",
+        "review",
+        "issue",
+        "release",
+        "contributor",
+      ],
+      evidence_type: [
+        "github_repository",
+        "resume_claim",
+        "certificate",
+        "deployment_url",
+      ],
+      user_role: ["student", "recruiter", "admin"],
     },
   },
-} as const;
+} as const

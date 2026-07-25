@@ -82,13 +82,20 @@ export function EvidenceExplorer({ evidence, searchParams }: EvidenceExplorerPro
       </CardHeader>
       <CardContent className="flex flex-col gap-4">
         <div className="flex flex-wrap gap-2" role="group" aria-label="Filter by evidence kind">
-          <Link href={buildHref({})}>
+          <Link
+            href={buildHref({})}
+            aria-current={!searchParams.kind && !searchParams.repository ? 'true' : undefined}
+          >
             <Badge variant={!searchParams.kind && !searchParams.repository ? 'default' : 'outline'}>
               All ({evidence.length})
             </Badge>
           </Link>
           {ALL_KINDS.filter((kind) => (countsByKind.get(kind) ?? 0) > 0).map((kind) => (
-            <Link key={kind} href={buildHref({ kind })}>
+            <Link
+              key={kind}
+              href={buildHref({ kind })}
+              aria-current={searchParams.kind === kind ? 'true' : undefined}
+            >
               <Badge variant={searchParams.kind === kind ? 'default' : 'outline'}>
                 {EVIDENCE_KIND_LABEL[kind]} ({countsByKind.get(kind) ?? 0})
               </Badge>
@@ -105,12 +112,12 @@ export function EvidenceExplorer({ evidence, searchParams }: EvidenceExplorerPro
                 key={item.id}
                 className="flex flex-col gap-1 px-4 py-3 sm:flex-row sm:items-center sm:justify-between"
               >
-                <div className="flex flex-col gap-0.5">
+                <div className="flex min-w-0 flex-col gap-0.5">
                   <div className="flex flex-wrap items-center gap-2">
                     {item.sourceType ? (
                       <Badge variant="secondary">{EVIDENCE_KIND_LABEL[item.sourceType]}</Badge>
                     ) : null}
-                    <span className="text-code">{item.title}</span>
+                    <span className="text-code break-words">{item.title}</span>
                   </div>
                   <span className="text-caption">
                     {item.repositoryFullName ?? 'unknown repository'}

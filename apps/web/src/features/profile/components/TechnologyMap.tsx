@@ -44,7 +44,7 @@ export function TechnologyMap({ entries }: TechnologyMapProps) {
         {rows.map((entry) => (
           <li key={entry.name} className="flex flex-col gap-1">
             <div className="flex items-baseline justify-between gap-2">
-              <span className="text-body font-medium">{entry.name}</span>
+              <span className="text-body min-w-0 font-medium break-words">{entry.name}</span>
               <span className="text-caption shrink-0">
                 {entry.repositoryCount} repo{entry.repositoryCount === 1 ? '' : 's'} ·{' '}
                 {formatRecency(entry.lastActivityAt)}

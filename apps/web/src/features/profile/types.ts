@@ -150,6 +150,10 @@ export interface AnalysisMetadata {
   readonly model: string | null;
   readonly completedAt: string | null;
   readonly confidence: ConfidenceLevel | null;
+  /** Set only when `status` is `partial` — what was excluded and why (CLAUDE.md §19.5, honest partial failure). */
+  readonly partialMessage: string | null;
+  readonly repositoryCount: number;
+  readonly evidenceCount: number;
 }
 
 /** The full page's data, assembled by `server/service.ts`. */

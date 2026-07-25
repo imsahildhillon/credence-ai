@@ -66,6 +66,13 @@ export function EngineeringSummary({ data }: EngineeringSummaryProps) {
             </div>
           </div>
         ) : null}
+
+        {data.strengths.length === 0 && data.growthAreas.length === 0 ? (
+          <p className="text-caption">
+            No individually cited strengths or growth areas yet — see the skill cards below for
+            the full evidence-backed assessment.
+          </p>
+        ) : null}
       </CardContent>
     </Card>
   );

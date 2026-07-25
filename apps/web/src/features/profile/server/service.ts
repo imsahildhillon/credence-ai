@@ -43,6 +43,8 @@ const READY_STATUSES = new Set(['completed', 'partial']);
 
 function buildAnalysisMetadata(
   analysis: NonNullable<Awaited<ReturnType<typeof getLatestAnalysis>>>,
+  repositoryCount: number,
+  evidenceCount: number,
 ): AnalysisMetadata {
   return {
     analysisId: analysis.id,
@@ -52,6 +54,9 @@ function buildAnalysisMetadata(
     model: analysis.model,
     completedAt: analysis.completed_at,
     confidence: analysis.confidence,
+    partialMessage: analysis.status === 'partial' ? analysis.error_message : null,
+    repositoryCount,
+    evidenceCount,
   };
 }
 
@@ -161,7 +166,7 @@ export async function getProfileForCurrentUser(): Promise<ProfileResult> {
     status: 'ready',
     data: {
       candidateLogin,
-      analysisMetadata: buildAnalysisMetadata(analysis),
+      analysisMetadata: buildAnalysisMetadata(analysis, repositoryIds.length, evidence.length),
       engineeringSummary: buildEngineeringSummary(analysis.summary, skillCards),
       skillCards,
       technologyMap: buildTechnologyMap(evidenceRows),

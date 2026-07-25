@@ -26,6 +26,7 @@ export function Collaboration({ data }: CollaborationProps) {
     { label: 'Issues participated in', value: data.issuesParticipated },
     { label: 'Repositories collaborated in', value: data.repositoriesCollaboratedIn },
   ];
+  const hasAnyActivity = stats.some((stat) => stat.value > 0);
 
   return (
     <Card>
@@ -33,14 +34,21 @@ export function Collaboration({ data }: CollaborationProps) {
         <CardTitle>Collaboration</CardTitle>
       </CardHeader>
       <CardContent>
-        <dl className="grid grid-cols-2 gap-4 sm:grid-cols-3">
-          {stats.map((stat) => (
-            <div key={stat.label} className="flex flex-col gap-1 rounded-lg border p-4">
-              <dt className="text-caption">{stat.label}</dt>
-              <dd className="text-h3">{stat.value}</dd>
-            </div>
-          ))}
-        </dl>
+        {hasAnyActivity ? (
+          <dl className="grid grid-cols-2 gap-4 sm:grid-cols-3">
+            {stats.map((stat) => (
+              <div key={stat.label} className="flex flex-col gap-1 rounded-lg border p-4">
+                <dt className="text-caption">{stat.label}</dt>
+                <dd className="text-h3">{stat.value}</dd>
+              </div>
+            ))}
+          </dl>
+        ) : (
+          <p className="text-caption">
+            No collaboration activity — reviews, pull requests, or issues — was found in the
+            analyzed repositories.
+          </p>
+        )}
       </CardContent>
     </Card>
   );
