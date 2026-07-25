@@ -5,10 +5,12 @@ import type {
   EngineeringTimelineSection,
   EvidenceEntry,
   EvidenceSourceType,
+  InterviewSuggestion,
   LanguageAdoptionEvent,
   ReleaseEvent,
   RepositoryHighlight,
   RepositoryOwnership,
+  SkillCard,
   TechnologyMapEntry,
   TimelineMonth,
 } from '../types';
@@ -476,4 +478,53 @@ export function buildRepositoryHighlights(
     })
     .sort((a, b) => b.evidenceCount - a.evidenceCount)
     .slice(0, MAX_HIGHLIGHTED_REPOSITORIES);
+}
+
+/** The repository named by the most evidence in a set, or null when the evidence spans no named repository. */
+function dominantRepositoryFullName(evidence: readonly EvidenceEntry[]): string | null {
+  const counts = new Map<string, number>();
+  for (const item of evidence) {
+    if (item.repositoryFullName) {
+      counts.set(item.repositoryFullName, (counts.get(item.repositoryFullName) ?? 0) + 1);
+    }
+  }
+  let best: string | null = null;
+  let bestCount = 0;
+  for (const [name, count] of counts) {
+    if (count > bestCount) {
+      best = name;
+      bestCount = count;
+    }
+  }
+  return best;
+}
+
+/**
+ * Interview Guide — one suggestion per (skill, growth area) pair, each
+ * carrying the evidence that grounds it. `topic` is exactly the growth-area
+ * text `features/analysis` already persisted for that skill — never
+ * re-generated or rephrased here, so a suggestion can never exist without
+ * the same evidence backing the skill assessment itself.
+ */
+export function buildInterviewGuide(
+  skillCards: readonly SkillCard[],
+): readonly InterviewSuggestion[] {
+  const suggestions: InterviewSuggestion[] = [];
+
+  for (const card of skillCards) {
+    if (card.evidence.length === 0) {
+      continue;
+    }
+    const groundedEvidence = card.evidence as readonly [EvidenceEntry, ...EvidenceEntry[]];
+    for (const growthArea of card.growthAreas) {
+      suggestions.push({
+        skillName: card.skillName,
+        topic: growthArea,
+        evidence: groundedEvidence,
+        repositoryFullName: dominantRepositoryFullName(card.evidence),
+      });
+    }
+  }
+
+  return suggestions.sort((a, b) => b.evidence.length - a.evidence.length);
 }

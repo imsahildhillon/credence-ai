@@ -551,4 +551,17 @@
       scroll-behavior: auto !important;
     }
   }
+
+  /* Engineering report printability: the report is designed to export as
+     PDF without changing layout (docs/10-flagship-experience.md), so print
+     only strips chrome that has no meaning on paper — the sticky chapter
+     rail and header actions. `ChapterRail` expands every `<details>` before
+     print fires so collapsed capability/finding content isn't lost. */
+  @media print {
+    a[href^='http']::after {
+      content: ' (' attr(href) ')';
+      font-size: 0.75em;
+      color: var(--muted-foreground);
+    }
+  }
 }

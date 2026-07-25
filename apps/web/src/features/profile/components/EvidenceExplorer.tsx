@@ -10,7 +10,6 @@ import {
   PaginationPrevious,
 } from '@/components/navigation/pagination';
 import { Badge } from '@/components/ui/badge';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 
 import type { EvidenceExplorerSearchParams } from '../schemas';
 import type { EvidenceEntry, EvidenceSourceType } from '../types';
@@ -49,13 +48,13 @@ function buildHref(params: Readonly<Partial<EvidenceExplorerSearchParams>>): str
 }
 
 /**
- * Section 8 — Evidence Explorer, the product's core differentiator: every
+ * Chapter 3 — Evidence Explorer, the product's core differentiator: every
  * commit, pull request, review, issue, release, and contributor record the
  * candidate has, each with a direct GitHub link. Filtering and pagination
  * are plain server-rendered links (query params), not client-side state —
  * every view is a real, bookmarkable URL and no evidence is transformed
- * client-side (CLAUDE.md §9.2, "Performance" requirement in this sprint's
- * spec).
+ * client-side (CLAUDE.md §9.2). Rendered inline as part of the document —
+ * not an isolated card — so evidence reads as part of the report itself.
  */
 export function EvidenceExplorer({ evidence, searchParams }: EvidenceExplorerProps) {
   const filtered = searchParams.kind
@@ -76,12 +75,8 @@ export function EvidenceExplorer({ evidence, searchParams }: EvidenceExplorerPro
   }
 
   return (
-    <Card id="evidence-explorer">
-      <CardHeader>
-        <CardTitle>Evidence explorer</CardTitle>
-      </CardHeader>
-      <CardContent className="flex flex-col gap-4">
-        <div className="flex flex-wrap gap-2" role="group" aria-label="Filter by evidence kind">
+    <div className="flex flex-col gap-4">
+      <div className="flex flex-wrap gap-2" role="group" aria-label="Filter by evidence kind">
           <Link
             href={buildHref({})}
             aria-current={!searchParams.kind && !searchParams.repository ? 'true' : undefined}
@@ -173,7 +168,6 @@ export function EvidenceExplorer({ evidence, searchParams }: EvidenceExplorerPro
             </PaginationContent>
           </Pagination>
         ) : null}
-      </CardContent>
-    </Card>
+    </div>
   );
 }

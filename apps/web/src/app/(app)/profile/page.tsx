@@ -7,37 +7,36 @@ import { Button } from '@/components/ui/button';
 import { trackEvent } from '@/features/analytics';
 import { getCurrentUser } from '@/features/auth/server/service';
 import { EvidenceExplorerSearchParamsSchema, getProfileForCurrentUser } from '@/features/profile';
-import { AnalysisMetadata } from '@/features/profile/components/AnalysisMetadata';
-import { CodeOwnership } from '@/features/profile/components/CodeOwnership';
-import { Collaboration } from '@/features/profile/components/Collaboration';
-import { EngineeringSummary } from '@/features/profile/components/EngineeringSummary';
-import { EngineeringTimeline } from '@/features/profile/components/EngineeringTimeline';
+import { AssessmentBoundaries } from '@/features/profile/components/AssessmentBoundaries';
+import { CapabilityMatrix } from '@/features/profile/components/CapabilityMatrix';
+import { Chapter } from '@/features/profile/components/Chapter';
+import { ChapterRail } from '@/features/profile/components/ChapterRail';
 import { EvidenceExplorer } from '@/features/profile/components/EvidenceExplorer';
+import { ExecutiveSummary } from '@/features/profile/components/ExecutiveSummary';
+import { InterviewGuide } from '@/features/profile/components/InterviewGuide';
+import { Methodology } from '@/features/profile/components/Methodology';
 import { PartialAnalysisBanner } from '@/features/profile/components/PartialAnalysisBanner';
 import { ProvenanceBanner } from '@/features/profile/components/ProvenanceBanner';
-import { RepositoryHighlights } from '@/features/profile/components/RepositoryHighlights';
-import { SkillCards } from '@/features/profile/components/SkillCards';
-import { TechnologyMap } from '@/features/profile/components/TechnologyMap';
+import { ReportHeader } from '@/features/profile/components/ReportHeader';
+import { RepositoryIntelligence } from '@/features/profile/components/RepositoryIntelligence';
 
-export const metadata: Metadata = { title: 'Your engineering profile — Credence AI' };
+export const metadata: Metadata = { title: 'Your engineering report — Credence AI' };
 
-const SECTIONS = [
-  { id: 'engineering-summary', label: 'Summary' },
-  { id: 'skill-cards', label: 'Skills' },
-  { id: 'technology-map', label: 'Technology' },
-  { id: 'engineering-timeline', label: 'Timeline' },
-  { id: 'collaboration', label: 'Collaboration' },
-  { id: 'code-ownership', label: 'Ownership' },
-  { id: 'repository-highlights', label: 'Repositories' },
+const CHAPTERS = [
+  { id: 'executive-summary', label: 'Executive summary' },
+  { id: 'capability-matrix', label: 'Capability matrix' },
   { id: 'evidence-explorer', label: 'Evidence' },
-  { id: 'analysis-metadata', label: 'Metadata' },
+  { id: 'repository-intelligence', label: 'Repositories' },
+  { id: 'interview-guide', label: 'Interview guide' },
+  { id: 'assessment-boundaries', label: 'Assessment boundaries' },
+  { id: 'methodology', label: 'Methodology' },
 ] as const;
 
 /**
- * The Candidate Engineering Profile — an explainable engineering dossier,
- * not a résumé. Every AI-generated insight renders through `EvidenceCard`
- * or `AiContentMarker`, so it is structurally impossible for this page to
- * show a claim without the evidence and confidence behind it.
+ * The Candidate Engineering Report — a structured technical document, not a
+ * dashboard. Every AI-generated insight renders through `EvidenceCard` or
+ * `AiContentMarker`, so it is structurally impossible for this page to show
+ * a claim without the evidence and confidence behind it.
  *
  * Only `completed`/`partial` analyses render here — `queued`/`processing`/
  * `failed` all redirect to `/analysis`, which already owns those states
@@ -49,9 +48,10 @@ const SECTIONS = [
  * additionally runs under the requesting user's own Row Level Security
  * session — there is no service-role read anywhere in this feature, so
  * "only the authenticated owner can view" is enforced twice, not once
- * (CLAUDE.md §18.2). Public sharing remains disabled; see the feature
- * README for how a future public profile route would reuse this same
- * service layer safely.
+ * (CLAUDE.md §18.2). This same component tree renders for a recruiter
+ * viewing a candidate (`getProfileForRecruiter`) via
+ * `app/(app)/recruiter/candidate/[id]/page.tsx` — one report, two
+ * audiences, never forked.
  */
 export default async function ProfilePage({
   searchParams,
@@ -88,7 +88,7 @@ export default async function ProfilePage({
     return (
       <div className="mx-auto flex w-full max-w-xl flex-col gap-8">
         <EmptyState
-          title="Your profile is empty"
+          title="Your report is empty"
           description="Your analysis completed, but no assessable evidence or skills were produced. Try connecting more repositories or re-running your analysis."
           action={
             <Button asChild>
@@ -101,18 +101,8 @@ export default async function ProfilePage({
   }
 
   return (
-    <div className="mx-auto flex w-full max-w-4xl flex-col gap-8">
-      <div className="flex flex-col gap-1">
-        <h1 className="text-h1">
-          {data.candidateLogin
-            ? `${data.candidateLogin}'s engineering profile`
-            : 'Engineering profile'}
-        </h1>
-        <p className="text-caption">
-          An explainable engineering dossier — every insight below links back to the evidence that
-          produced it.
-        </p>
-      </div>
+    <div className="mx-auto flex w-full max-w-4xl flex-col gap-8 print:max-w-none">
+      <ReportHeader candidateLogin={data.candidateLogin} metadata={data.analysisMetadata} />
 
       {data.analysisMetadata.partialMessage ? (
         <PartialAnalysisBanner message={data.analysisMetadata.partialMessage} />
@@ -120,80 +110,35 @@ export default async function ProfilePage({
 
       <ProvenanceBanner metadata={data.analysisMetadata} />
 
-      <nav aria-label="Profile sections" className="flex flex-wrap gap-x-4 gap-y-1 border-b pb-4">
-        {SECTIONS.map((section) => (
-          <a
-            key={section.id}
-            href={`#${section.id}`}
-            className="text-caption hover:text-foreground"
-          >
-            {section.label}
-          </a>
-        ))}
-      </nav>
+      <ChapterRail sections={CHAPTERS} />
 
-      <section id="engineering-summary" aria-labelledby="engineering-summary-heading">
-        <h2 id="engineering-summary-heading" className="sr-only">
-          Engineering summary
-        </h2>
-        <EngineeringSummary data={data.engineeringSummary} />
-      </section>
+      <Chapter number={1} id="executive-summary" title="Executive summary">
+        <ExecutiveSummary data={data.engineeringSummary} />
+      </Chapter>
 
-      <section id="skill-cards" aria-labelledby="skill-cards-heading">
-        <h2 id="skill-cards-heading" className="sr-only">
-          Skills
-        </h2>
-        <SkillCards skillCards={data.skillCards} />
-      </section>
+      <Chapter number={2} id="capability-matrix" title="Capability matrix">
+        <CapabilityMatrix skillCards={data.skillCards} />
+      </Chapter>
 
-      <section id="technology-map" aria-labelledby="technology-map-heading">
-        <h2 id="technology-map-heading" className="sr-only">
-          Technology map
-        </h2>
-        <TechnologyMap entries={data.technologyMap} />
-      </section>
-
-      <section id="engineering-timeline" aria-labelledby="engineering-timeline-heading">
-        <h2 id="engineering-timeline-heading" className="sr-only">
-          Engineering timeline
-        </h2>
-        <EngineeringTimeline data={data.timeline} />
-      </section>
-
-      <section id="collaboration" aria-labelledby="collaboration-heading">
-        <h2 id="collaboration-heading" className="sr-only">
-          Collaboration
-        </h2>
-        <Collaboration data={data.collaboration} />
-      </section>
-
-      <section id="code-ownership" aria-labelledby="code-ownership-heading">
-        <h2 id="code-ownership-heading" className="sr-only">
-          Code ownership
-        </h2>
-        <CodeOwnership ownership={data.ownership} />
-      </section>
-
-      <section id="repository-highlights" aria-labelledby="repository-highlights-heading">
-        <h2 id="repository-highlights-heading" className="sr-only">
-          Repository highlights
-        </h2>
-        <RepositoryHighlights highlights={data.repositoryHighlights} />
-      </section>
-
-      <section aria-labelledby="evidence-explorer-heading">
-        <h2 id="evidence-explorer-heading" className="sr-only">
-          Evidence explorer
-        </h2>
+      <Chapter number={3} id="evidence-explorer" title="Evidence explorer">
         <EvidenceExplorer evidence={data.evidence} searchParams={evidenceExplorerParams} />
-      </section>
+      </Chapter>
 
-      <section id="analysis-metadata" aria-labelledby="analysis-metadata-heading">
-        <h2 id="analysis-metadata-heading" className="sr-only">
-          Analysis metadata
-        </h2>
-        <AnalysisMetadata metadata={data.analysisMetadata} />
-      </section>
+      <Chapter number={4} id="repository-intelligence" title="Repository intelligence">
+        <RepositoryIntelligence highlights={data.repositoryHighlights} />
+      </Chapter>
+
+      <Chapter number={5} id="interview-guide" title="Interview guide">
+        <InterviewGuide suggestions={data.interviewGuide} />
+      </Chapter>
+
+      <Chapter number={6} id="assessment-boundaries" title="Assessment boundaries">
+        <AssessmentBoundaries metadata={data.analysisMetadata} evidence={data.evidence} />
+      </Chapter>
+
+      <Chapter number={7} id="methodology" title="Methodology">
+        <Methodology metadata={data.analysisMetadata} />
+      </Chapter>
     </div>
   );
 }

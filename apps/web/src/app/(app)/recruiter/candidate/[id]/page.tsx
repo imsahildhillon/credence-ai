@@ -3,23 +3,33 @@ import { redirect } from 'next/navigation';
 
 import { EmptyState } from '@/components/feedback/empty-state';
 import { EvidenceExplorerSearchParamsSchema } from '@/features/profile';
-import { AnalysisMetadata } from '@/features/profile/components/AnalysisMetadata';
-import { CodeOwnership } from '@/features/profile/components/CodeOwnership';
-import { Collaboration } from '@/features/profile/components/Collaboration';
-import { EngineeringSummary } from '@/features/profile/components/EngineeringSummary';
-import { EngineeringTimeline } from '@/features/profile/components/EngineeringTimeline';
+import { AssessmentBoundaries } from '@/features/profile/components/AssessmentBoundaries';
+import { CapabilityMatrix } from '@/features/profile/components/CapabilityMatrix';
+import { Chapter } from '@/features/profile/components/Chapter';
+import { ChapterRail } from '@/features/profile/components/ChapterRail';
 import { EvidenceExplorer } from '@/features/profile/components/EvidenceExplorer';
+import { ExecutiveSummary } from '@/features/profile/components/ExecutiveSummary';
+import { InterviewGuide } from '@/features/profile/components/InterviewGuide';
+import { Methodology } from '@/features/profile/components/Methodology';
 import { PartialAnalysisBanner } from '@/features/profile/components/PartialAnalysisBanner';
 import { ProvenanceBanner } from '@/features/profile/components/ProvenanceBanner';
-import { RepositoryHighlights } from '@/features/profile/components/RepositoryHighlights';
-import { SkillCards } from '@/features/profile/components/SkillCards';
-import { TechnologyMap } from '@/features/profile/components/TechnologyMap';
+import { RepositoryIntelligence } from '@/features/profile/components/RepositoryIntelligence';
 import { getCandidateProfile } from '@/features/recruiter';
 import { BookmarkButton } from '@/features/recruiter/components/BookmarkButton';
 import { CandidateStatusSelect } from '@/features/recruiter/components/CandidateStatusSelect';
 import { RecruiterNotes } from '@/features/recruiter/components/RecruiterNotes';
 
 export const metadata: Metadata = { title: 'Candidate — Credence AI' };
+
+const CHAPTERS = [
+  { id: 'executive-summary', label: 'Executive summary' },
+  { id: 'capability-matrix', label: 'Capability matrix' },
+  { id: 'evidence-explorer', label: 'Evidence' },
+  { id: 'repository-intelligence', label: 'Repositories' },
+  { id: 'interview-guide', label: 'Interview guide' },
+  { id: 'assessment-boundaries', label: 'Assessment boundaries' },
+  { id: 'methodology', label: 'Methodology' },
+] as const;
 
 /**
  * The Candidate Profile, recruiter view. This page adds exactly three
@@ -135,68 +145,35 @@ export default async function RecruiterCandidatePage({
 
       <RecruiterNotes profileId={id} note={tracking.note} />
 
-      <section aria-labelledby="engineering-summary-heading">
-        <h2 id="engineering-summary-heading" className="sr-only">
-          Engineering summary
-        </h2>
-        <EngineeringSummary data={data.engineeringSummary} />
-      </section>
+      <ChapterRail sections={CHAPTERS} />
 
-      <section aria-labelledby="skill-cards-heading">
-        <h2 id="skill-cards-heading" className="sr-only">
-          Skills
-        </h2>
-        <SkillCards skillCards={data.skillCards} />
-      </section>
+      <Chapter number={1} id="executive-summary" title="Executive summary">
+        <ExecutiveSummary data={data.engineeringSummary} />
+      </Chapter>
 
-      <section aria-labelledby="technology-map-heading">
-        <h2 id="technology-map-heading" className="sr-only">
-          Technology map
-        </h2>
-        <TechnologyMap entries={data.technologyMap} />
-      </section>
+      <Chapter number={2} id="capability-matrix" title="Capability matrix">
+        <CapabilityMatrix skillCards={data.skillCards} />
+      </Chapter>
 
-      <section aria-labelledby="engineering-timeline-heading">
-        <h2 id="engineering-timeline-heading" className="sr-only">
-          Engineering timeline
-        </h2>
-        <EngineeringTimeline data={data.timeline} />
-      </section>
-
-      <section aria-labelledby="collaboration-heading">
-        <h2 id="collaboration-heading" className="sr-only">
-          Collaboration
-        </h2>
-        <Collaboration data={data.collaboration} />
-      </section>
-
-      <section aria-labelledby="code-ownership-heading">
-        <h2 id="code-ownership-heading" className="sr-only">
-          Code ownership
-        </h2>
-        <CodeOwnership ownership={data.ownership} />
-      </section>
-
-      <section aria-labelledby="repository-highlights-heading">
-        <h2 id="repository-highlights-heading" className="sr-only">
-          Repository highlights
-        </h2>
-        <RepositoryHighlights highlights={data.repositoryHighlights} />
-      </section>
-
-      <section aria-labelledby="evidence-explorer-heading">
-        <h2 id="evidence-explorer-heading" className="sr-only">
-          Evidence explorer
-        </h2>
+      <Chapter number={3} id="evidence-explorer" title="Evidence explorer">
         <EvidenceExplorer evidence={data.evidence} searchParams={evidenceExplorerParams} />
-      </section>
+      </Chapter>
 
-      <section aria-labelledby="analysis-metadata-heading">
-        <h2 id="analysis-metadata-heading" className="sr-only">
-          Analysis metadata
-        </h2>
-        <AnalysisMetadata metadata={data.analysisMetadata} />
-      </section>
+      <Chapter number={4} id="repository-intelligence" title="Repository intelligence">
+        <RepositoryIntelligence highlights={data.repositoryHighlights} />
+      </Chapter>
+
+      <Chapter number={5} id="interview-guide" title="Interview guide">
+        <InterviewGuide suggestions={data.interviewGuide} />
+      </Chapter>
+
+      <Chapter number={6} id="assessment-boundaries" title="Assessment boundaries">
+        <AssessmentBoundaries metadata={data.analysisMetadata} evidence={data.evidence} />
+      </Chapter>
+
+      <Chapter number={7} id="methodology" title="Methodology">
+        <Methodology metadata={data.analysisMetadata} />
+      </Chapter>
     </div>
   );
 }

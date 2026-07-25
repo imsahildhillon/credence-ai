@@ -7,11 +7,10 @@ export interface ProvenanceBannerProps {
 }
 
 /**
- * Section 9 trust improvement: every AI-generated section on this page
- * traces back to this one line — "Generated from: X repositories, Y
- * evidence items, Z assessment date" — plus a single, consistent entry
- * point into the full methodology (`#analysis-metadata`, this same
- * page's Section 9 detail). Counts are read straight off `AnalysisMetadata`
+ * Every AI-generated section in this report traces back to this one line —
+ * "Generated from: X repositories, Y evidence items, Z assessment date" —
+ * plus a single, consistent entry point into the full methodology chapter
+ * (`#methodology`). Counts are read straight off `AnalysisMetadata`
  * (CLAUDE.md §15.2: a bare number without provenance is a schema-review
  * rejection — these are the same counts persisted alongside the run, not
  * recomputed here), never invented client-side.
@@ -38,7 +37,7 @@ export function ProvenanceBanner({ metadata }: ProvenanceBannerProps) {
         </span>
         , assessed {assessedOn}.
       </p>
-      <Link href="#analysis-metadata" className="text-ai text-caption font-medium hover:underline">
+      <Link href="#methodology" className="text-ai text-caption font-medium hover:underline">
         Learn how this was generated
       </Link>
     </div>

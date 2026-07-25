@@ -143,6 +143,19 @@ export interface RepositoryHighlight {
   readonly evidenceCountBySourceType: Readonly<Partial<Record<EvidenceSourceType, number>>>;
 }
 
+/**
+ * Interview Guide — one evidence-backed topic per observed growth area.
+ * `topic` and `reason` are exactly the growth-area text and skill name
+ * `features/analysis` already persisted (never re-generated here); a
+ * suggestion never renders without at least one evidence item.
+ */
+export interface InterviewSuggestion {
+  readonly skillName: string;
+  readonly topic: string;
+  readonly evidence: readonly [EvidenceEntry, ...EvidenceEntry[]];
+  readonly repositoryFullName: string | null;
+}
+
 /** Section 9 — Analysis Metadata. */
 export interface AnalysisMetadata {
   readonly analysisId: string;
@@ -169,6 +182,7 @@ export interface ProfileData {
   readonly collaboration: CollaborationSection;
   readonly ownership: readonly RepositoryOwnership[];
   readonly repositoryHighlights: readonly RepositoryHighlight[];
+  readonly interviewGuide: readonly InterviewSuggestion[];
   /** All evidence for the Evidence Explorer, most-recent-first. */
   readonly evidence: readonly EvidenceEntry[];
 }

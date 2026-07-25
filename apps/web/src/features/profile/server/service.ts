@@ -13,6 +13,7 @@ import type {
 
 import {
   buildCollaboration,
+  buildInterviewGuide,
   buildOwnership,
   buildRepositoryHighlights,
   buildTechnologyMap,
@@ -167,6 +168,7 @@ async function assembleReadyProfile(
       collaboration: buildCollaboration(evidenceRows, candidateLogin),
       ownership: buildOwnership(evidenceRows, repositoriesById, candidateLogin),
       repositoryHighlights: buildRepositoryHighlights(evidenceRows, repositoriesById),
+      interviewGuide: buildInterviewGuide(skillCards),
       evidence,
     },
   };
