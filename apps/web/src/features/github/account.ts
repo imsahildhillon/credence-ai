@@ -1,9 +1,10 @@
 import 'server-only';
 
-import type { User } from '@supabase/supabase-js';
+import type { SupabaseClient, User } from '@supabase/supabase-js';
 
 import { normalizeSupabaseError } from '@/lib/supabase/errors';
 import { createClient } from '@/lib/supabase/server';
+import type { Database } from '@/lib/supabase/types';
 
 import { storeGithubAccessToken } from './credentials';
 import { getAuthenticatedGithubUser } from './service';
@@ -29,11 +30,11 @@ export function deriveGithubIdentity(user: User): { id: number; login: string } 
 }
 
 async function upsertGithubAccount(
+  supabase: SupabaseClient<Database>,
   profileId: string,
   githubUserId: number,
   githubUsername: string,
 ): Promise<GithubAccountRow> {
-  const supabase = await createClient();
   const { data, error } = await supabase
     .from('github_accounts')
     .upsert(
@@ -59,6 +60,17 @@ async function upsertGithubAccount(
  * network round-trip to every login; onboarding uses the API for accuracy and
  * falls back to session identity if GitHub is unreachable.
  *
+ * `client`, if provided, is used instead of building one via
+ * `lib/supabase/server.ts`'s ambient `createClient()`. This exists because
+ * that ambient client reads the session through `next/headers`' cookie jar,
+ * which — within the OAuth callback's own request — has not yet observed the
+ * session `exchangeCodeForSession()` just established (that session's
+ * cookies were written onto the callback's own locally-scoped `response`
+ * object, not into `next/headers`). Passing the callback's already-
+ * authenticated client through avoids reconstructing auth from a cookie jar
+ * that is one request behind; every other caller omits it and gets the
+ * ambient client as before.
+ *
  * ROOT-CAUSE FIX (credential-capture investigation): when `useApi: true`, the
  * session-derived identity is upserted *before* the API call, not after.
  * `getAuthenticatedGithubUser()` calls `resolveGithubAccess()`
@@ -74,24 +86,25 @@ async function upsertGithubAccount(
  */
 export async function ensureGithubAccount(
   user: User,
-  { useApi = true }: { useApi?: boolean } = {},
+  { useApi = true, client }: { useApi?: boolean; client?: SupabaseClient<Database> } = {},
 ): Promise<GithubAccountRow> {
+  const supabase = client ?? (await createClient());
   const fromSession = deriveGithubIdentity(user);
 
   if (!useApi) {
     if (!fromSession) {
       throw new GithubError('unknown', 'No GitHub identity present on this session.');
     }
-    return upsertGithubAccount(user.id, fromSession.id, fromSession.login);
+    return upsertGithubAccount(supabase, user.id, fromSession.id, fromSession.login);
   }
 
   const sessionAccount = fromSession
-    ? await upsertGithubAccount(user.id, fromSession.id, fromSession.login)
+    ? await upsertGithubAccount(supabase, user.id, fromSession.id, fromSession.login)
     : null;
 
   try {
     const apiUser = await getAuthenticatedGithubUser();
-    return await upsertGithubAccount(user.id, apiUser.id, apiUser.login);
+    return await upsertGithubAccount(supabase, user.id, apiUser.id, apiUser.login);
   } catch (error) {
     if (!(error instanceof GithubError) || !sessionAccount) {
       throw error;
@@ -121,16 +134,23 @@ export type CredentialCaptureOutcome =
  * (a failure here must never break login), but now reports exactly which of
  * the three possible outcomes occurred so the caller can log accordingly
  * instead of guessing after the fact.
+ *
+ * `client` is required (not optional, unlike `ensureGithubAccount`'s) because
+ * this function has exactly one caller — the OAuth callback — and that
+ * caller must always pass the client it authenticated via
+ * `exchangeCodeForSession()`, never the ambient one. See `ensureGithubAccount`
+ * for why the ambient client cannot see this session yet.
  */
 export async function captureGithubOAuthCredentials(
   user: User,
   providerToken: string | null | undefined,
+  client: SupabaseClient<Database>,
 ): Promise<CredentialCaptureOutcome> {
   if (!providerToken) {
     return { outcome: 'no_provider_token' };
   }
   try {
-    const account = await ensureGithubAccount(user, { useApi: false });
+    const account = await ensureGithubAccount(user, { useApi: false, client });
     await storeGithubAccessToken(account.id, providerToken);
     return { outcome: 'captured' };
   } catch (error) {
