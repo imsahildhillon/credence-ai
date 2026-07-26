@@ -71,11 +71,47 @@ export async function GET(request: NextRequest) {
       }
 
       try {
-        await captureGithubOAuthCredentials(data.user, data.session.provider_token);
-      } catch {
-        // Never break sign-in over credential capture. If this fails the app
-        // falls back to the session's provider_token for this session and
-        // re-attempts persistence on the next GitHub call.
+        const captureResult = await captureGithubOAuthCredentials(
+          data.user,
+          data.session.provider_token,
+        );
+        switch (captureResult.outcome) {
+          case 'captured':
+            break; // Happy path — no noise needed.
+          case 'no_provider_token':
+            // Expected some of the time (GitHub/Supabase doesn't guarantee a
+            // fresh provider_token on every exchange) — resolveGithubAccess's
+            // opportunistic persist (features/github/service.ts) is the
+            // designed self-heal for this case, not an error on its own.
+            // Logged as a fact, not a failure, so a real pattern is still
+            // visible without being alarmed on every occurrence.
+            console.warn('[auth] github sign-in produced no provider_token to capture', {
+              userId: data.user.id,
+            });
+            break;
+          case 'persist_failed':
+            // Never silent — this is exactly the gap that made two students'
+            // missing github_credentials rows undiagnosable from logs alone.
+            console.error(
+              '[auth] failed to persist github credential',
+              JSON.stringify({
+                userId: data.user.id,
+                error:
+                  captureResult.error instanceof Error
+                    ? { name: captureResult.error.name, message: captureResult.error.message }
+                    : captureResult.error,
+              }),
+            );
+            break;
+        }
+      } catch (error) {
+        // Never break sign-in over credential capture — but never silent
+        // either. If this fires, it's a bug in captureGithubOAuthCredentials
+        // itself (it's designed to never throw); still degrade gracefully.
+        console.error(
+          '[auth] unexpected error capturing github credential:',
+          error instanceof Error ? error.message : error,
+        );
       }
 
       return response;
