@@ -3,6 +3,7 @@ import 'server-only';
 import { runSkillAssessment } from '@/features/analysis';
 import { ingestAnalysisEvidence } from '@/features/evidence';
 
+import { logStageFailure } from './diagnostics';
 import {
   claimNextAnalysis,
   isCancellationRequested,
@@ -52,7 +53,13 @@ export async function runAnalysisLifecycle(
   const checkpoint = makeCheckpoint(analysisId, isWorkerStopping);
 
   await recordEvent(analysisId, 'ingestion_started');
-  const ingestion = await ingestAnalysisEvidence(analysisId, checkpoint);
+  let ingestion;
+  try {
+    ingestion = await ingestAnalysisEvidence(analysisId, checkpoint);
+  } catch (error) {
+    logStageFailure('ingest', analysisId, 'ingesting', error);
+    throw error;
+  }
 
   if (ingestion.outcome === 'cancelled') {
     await writeCancelled(analysisId);
@@ -78,7 +85,13 @@ export async function runAnalysisLifecycle(
 
   await transitionStatus(analysisId, 'assessing');
   await recordEvent(analysisId, 'assessment_started');
-  const assessment = await runSkillAssessment(analysisId, checkpoint);
+  let assessment;
+  try {
+    assessment = await runSkillAssessment(analysisId, checkpoint);
+  } catch (error) {
+    logStageFailure('assess', analysisId, 'assessing', error);
+    throw error;
+  }
 
   if (assessment.outcome === 'cancelled') {
     await writeCancelled(analysisId);
@@ -95,17 +108,22 @@ export async function runAnalysisLifecycle(
     evidenceConsidered: assessment.evidenceConsidered,
   });
 
-  await transitionStatus(analysisId, 'finalizing');
+  try {
+    await transitionStatus(analysisId, 'finalizing');
 
-  if ((await checkpoint()) === 'stop') {
-    await writeCancelled(analysisId);
-    await recordEvent(analysisId, 'cancelled', { stage: 'finalizing' });
-    return { analysisId, outcome: 'cancelled' };
+    if ((await checkpoint()) === 'stop') {
+      await writeCancelled(analysisId);
+      await recordEvent(analysisId, 'cancelled', { stage: 'finalizing' });
+      return { analysisId, outcome: 'cancelled' };
+    }
+
+    await writeTerminalSuccess(analysisId, assessment);
+    await recordEvent(analysisId, 'finalized', { status: assessment.status });
+    return { analysisId, outcome: assessment.status };
+  } catch (error) {
+    logStageFailure('finalize', analysisId, 'finalizing', error);
+    throw error;
   }
-
-  await writeTerminalSuccess(analysisId, assessment);
-  await recordEvent(analysisId, 'finalized', { status: assessment.status });
-  return { analysisId, outcome: assessment.status };
 }
 
 /** Claims one run (fresh or stale-reclaimed) and drives it to a terminal state. Returns `null` when the queue is empty. */
