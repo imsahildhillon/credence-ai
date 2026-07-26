@@ -106,19 +106,23 @@ function describeErrorForLog(error: unknown, seen: Set<unknown> = new Set()): un
 }
 
 /**
- * Logs the complete original exception that terminated an analysis, before
- * `failRun` reduces it to the two strings (`kind`/`message`) that get
- * persisted. Without this, the worker's own top-level log
- * (`[worker …] analysis <id> → failed`) is the only trace of a failure that
- * originated here — this is the one place that exception exists in full.
+ * Logs the complete original exception that terminated an analysis. Called
+ * from `failRun` — the single function every failure branch in
+ * `runSkillAssessment` returns through — rather than from individual `catch`
+ * blocks, because most failure branches (`no_evidence`,
+ * `no_assessable_skills`, `no_verifiable_assessments`) are data checks with no
+ * exception at all, and the one that previously seemed like "the" catch (the
+ * Claude API call) is not the only one that actually catches one: the
+ * per-assessment persist loop does too, and was invisible until this could be
+ * called from `failRun` in exactly one place either way.
  */
-function logAssessmentFailure(analysisId: string, stage: string, error: unknown): void {
+function logAssessmentFailure(analysisId: string, error: unknown): void {
   const asError = error instanceof Error ? error : undefined;
   console.error(
     [
       '[analysis-failed]',
       `analysisId: ${analysisId}`,
-      `stage: ${stage}`,
+      `stage: assess`,
       `code: ${codeOf(error) ?? kindOf(error)}`,
       `message: ${messageOf(error)}`,
       `stack: ${asError?.stack ?? 'n/a'}`,
@@ -127,13 +131,26 @@ function logAssessmentFailure(analysisId: string, stage: string, error: unknown)
   );
 }
 
+/**
+ * `cause`, when provided, is the original exception that produced this
+ * failure — logged here, once, before the analysis is marked failed, because
+ * this function is the one place every failure branch in
+ * `runSkillAssessment` passes through on its way to `{outcome: 'failure'}`.
+ * Branches with no underlying exception (the data-shape checks) simply omit
+ * it; nothing changes for them.
+ */
 async function failRun(
   analysisId: string,
   kind: string,
   operatorMessage: string,
   userMessage: string,
   retryable: boolean,
+  cause?: unknown,
 ): Promise<AssessmentResult> {
+  if (cause !== undefined) {
+    logAssessmentFailure(analysisId, cause);
+  }
+
   try {
     await recordAssessmentError(analysisId, kind, operatorMessage, retryable);
   } catch {
@@ -228,7 +245,6 @@ export async function runSkillAssessment(
       schema: buildAssessmentOutputSchema(input.skills.map((skill) => skill.slug)),
     });
   } catch (error) {
-    logAssessmentFailure(analysisId, 'assess', error);
     // Evidence is untouched and remains available for a later attempt.
     return failRun(
       analysisId,
@@ -236,6 +252,7 @@ export async function runSkillAssessment(
       messageOf(error),
       'We could not finish assessing your work. Your analyzed evidence is saved — try again shortly.',
       isRetryable(error),
+      error,
     );
   }
 
@@ -264,6 +281,7 @@ export async function runSkillAssessment(
 
   const persistedLevels: ConfidenceLevel[] = [];
   let persistFailures = 0;
+  let lastPersistError: unknown;
 
   for (const assessment of assessments) {
     try {
@@ -271,6 +289,7 @@ export async function runSkillAssessment(
       persistedLevels.push(assessment.confidence);
     } catch (error) {
       persistFailures += 1;
+      lastPersistError = error;
       // The database is the last line of defense (CLAUDE.md §15.1); if it
       // refuses a row, that assessment is dropped, not forced through.
       await recordAssessmentError(
@@ -289,6 +308,7 @@ export async function runSkillAssessment(
       'No assessment could be persisted.',
       'We could not save your assessment. Your analyzed evidence is saved — try again shortly.',
       true,
+      lastPersistError,
     );
   }
 
