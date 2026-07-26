@@ -61,6 +61,72 @@ function messageOf(error: unknown): string {
   return error instanceof Error ? error.message : 'The assessment failed unexpectedly.';
 }
 
+/** `error.code` if the value carries one (Postgrest/Supabase-shaped errors), else undefined — distinct from `kindOf`, which is `AiError`-specific and still drives `failRun`'s `kind` argument unchanged. */
+function codeOf(error: unknown): unknown {
+  return error !== null && typeof error === 'object' && 'code' in error
+    ? (error as { code: unknown }).code
+    : undefined;
+}
+
+/**
+ * Walks an arbitrary error into a plain, JSON-loggable object — name/message,
+ * plus any of status/statusCode/code/details/hint/kind/retryable it carries
+ * (Postgrest bodies, `AiError`, and raw fetch failures each use a different
+ * subset), recursing into `.cause` so a wrapped error never hides the thing
+ * that actually failed. Independent of `lib/supabase/errors.ts`'s and
+ * `features/pipeline/diagnostics.ts`'s own copies of this same walk — this
+ * feature does not import from either (CLAUDE.md §4).
+ */
+function describeErrorForLog(error: unknown, seen: Set<unknown> = new Set()): unknown {
+  if (error === null || typeof error !== 'object') {
+    return error;
+  }
+  if (seen.has(error)) {
+    return '[circular]';
+  }
+  seen.add(error);
+
+  const record = error as Record<string, unknown>;
+  const description: Record<string, unknown> = {};
+
+  if (error instanceof Error) {
+    description['name'] = error.name;
+    description['message'] = error.message;
+  }
+  for (const key of ['status', 'statusCode', 'code', 'details', 'hint', 'kind', 'retryable']) {
+    if (record[key] !== undefined) {
+      description[key] = record[key];
+    }
+  }
+  if (record['cause'] !== undefined) {
+    description['cause'] = describeErrorForLog(record['cause'], seen);
+  }
+
+  return description;
+}
+
+/**
+ * Logs the complete original exception that terminated an analysis, before
+ * `failRun` reduces it to the two strings (`kind`/`message`) that get
+ * persisted. Without this, the worker's own top-level log
+ * (`[worker …] analysis <id> → failed`) is the only trace of a failure that
+ * originated here — this is the one place that exception exists in full.
+ */
+function logAssessmentFailure(analysisId: string, stage: string, error: unknown): void {
+  const asError = error instanceof Error ? error : undefined;
+  console.error(
+    [
+      '[analysis-failed]',
+      `analysisId: ${analysisId}`,
+      `stage: ${stage}`,
+      `code: ${codeOf(error) ?? kindOf(error)}`,
+      `message: ${messageOf(error)}`,
+      `stack: ${asError?.stack ?? 'n/a'}`,
+      `cause: ${JSON.stringify(describeErrorForLog(error), null, 2)}`,
+    ].join('\n'),
+  );
+}
+
 async function failRun(
   analysisId: string,
   kind: string,
@@ -162,6 +228,7 @@ export async function runSkillAssessment(
       schema: buildAssessmentOutputSchema(input.skills.map((skill) => skill.slug)),
     });
   } catch (error) {
+    logAssessmentFailure(analysisId, 'assess', error);
     // Evidence is untouched and remains available for a later attempt.
     return failRun(
       analysisId,

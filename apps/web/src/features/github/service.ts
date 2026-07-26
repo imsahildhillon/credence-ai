@@ -62,12 +62,26 @@ async function resolveGithubAccess(): Promise<GithubAccess> {
       if (stored) {
         return { token: stored, githubAccountId };
       }
-    } catch {
-      // Storage unavailable (e.g. service-role key not configured, or the
+    } catch (error) {
+      // Storage unavailable (e.g. service-role key rejected, or the
       // encryption key changed). Degrade to the session token rather than
-      // breaking the feature — never log the failure's contents, it is
-      // credential-adjacent (CLAUDE.md §20.4).
-      console.error('[github] stored credential unreadable; falling back to session token');
+      // breaking the feature. `readGithubAccessToken` only ever throws the
+      // plain `{code, message}` shape `normalizeSupabaseError` produces
+      // (never the raw Supabase error, and never the encrypted/decrypted
+      // token) — logging those two fields plus the non-secret account id is
+      // enough to diagnose the cause without violating CLAUDE.md §20.4. This
+      // replaces a bare `catch {}` that discarded that shape entirely, which
+      // is what made this failure indistinguishable from any other without
+      // re-tracing the whole call chain by hand.
+      const { code, message } =
+        error !== null && typeof error === 'object' && 'code' in error && 'message' in error
+          ? (error as { code: unknown; message: unknown })
+          : { code: undefined, message: String(error) };
+      console.error('[github] stored credential unreadable; falling back to session token', {
+        githubAccountId,
+        code,
+        message,
+      });
     }
   }
 
