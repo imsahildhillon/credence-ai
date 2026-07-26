@@ -24,18 +24,38 @@ export async function storeGithubAccessToken(
   accessToken: string,
   scopes?: string | null,
 ): Promise<void> {
+  // TEMPORARY DIAGNOSTICS — never logs the token itself, only its presence
+  // (CLAUDE.md §18.5, §20.4). There is no early-return branch in this
+  // function today (every call reaches the upsert below); this log exists so
+  // that fact is verifiable from production logs rather than assumed from
+  // reading the source.
+  console.warn('[storeGithubAccessToken] entered', {
+    githubAccountId,
+    hasAccessToken: Boolean(accessToken),
+  });
+
   const admin = createAdminClient();
-  const { error } = await admin.from('github_credentials').upsert(
-    {
-      github_account_id: githubAccountId,
-      access_token_encrypted: encryptSecret(accessToken),
-      token_scopes: scopes ?? null,
-      captured_at: new Date().toISOString(),
-      // A freshly captured token means authorization is valid again.
-      revoked_at: null,
-    },
-    { onConflict: 'github_account_id' },
-  );
+  const { data, error } = await admin
+    .from('github_credentials')
+    .upsert(
+      {
+        github_account_id: githubAccountId,
+        access_token_encrypted: encryptSecret(accessToken),
+        token_scopes: scopes ?? null,
+        captured_at: new Date().toISOString(),
+        // A freshly captured token means authorization is valid again.
+        revoked_at: null,
+      },
+      { onConflict: 'github_account_id' },
+    )
+    .select('id, github_account_id, captured_at, revoked_at');
+
+  // TEMPORARY DIAGNOSTICS — the exact upsert result, before any throw.
+  console.warn('[storeGithubAccessToken] upsert result', {
+    githubAccountId,
+    data,
+    error,
+  });
 
   if (error) {
     throw normalizeSupabaseError(error);
@@ -51,13 +71,61 @@ export async function readGithubAccessToken(githubAccountId: string): Promise<st
     .eq('github_account_id', githubAccountId)
     .maybeSingle();
 
+  // TEMPORARY DIAGNOSTICS — never logs the token itself (CLAUDE.md §18.5,
+  // §20.4), only booleans describing what was found. Every return path below
+  // logs immediately before returning/throwing.
+  const rowFound = data !== null;
+  const revokedAtIsNull = rowFound ? data.revoked_at === null : null;
+  const hasEncryptedToken = rowFound ? Boolean(data.access_token_encrypted) : null;
+
   if (error) {
+    console.warn('[readGithubAccessToken] result', {
+      githubAccountId,
+      rowFound,
+      revokedAtIsNull,
+      hasEncryptedToken,
+      decryptionSucceeded: null,
+      returnPath: 'throw',
+      error,
+    });
     throw normalizeSupabaseError(error);
   }
+
   if (!data || data.revoked_at) {
+    console.warn('[readGithubAccessToken] result', {
+      githubAccountId,
+      rowFound,
+      revokedAtIsNull,
+      hasEncryptedToken,
+      decryptionSucceeded: null,
+      returnPath: 'null',
+    });
     return null;
   }
-  return decryptSecret(data.access_token_encrypted);
+
+  try {
+    const token = decryptSecret(data.access_token_encrypted);
+    console.warn('[readGithubAccessToken] result', {
+      githubAccountId,
+      rowFound,
+      revokedAtIsNull,
+      hasEncryptedToken,
+      decryptionSucceeded: true,
+      returnPath: 'token',
+    });
+    return token;
+  } catch (error) {
+    console.warn('[readGithubAccessToken] result', {
+      githubAccountId,
+      rowFound,
+      revokedAtIsNull,
+      hasEncryptedToken,
+      decryptionSucceeded: false,
+      returnPath: 'throw',
+      error,
+    });
+    throw error;
+  }
 }
 
 /**
