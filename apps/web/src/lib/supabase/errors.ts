@@ -21,7 +21,14 @@ export type SupabaseErrorCode =
 export interface SupabaseError {
   readonly code: SupabaseErrorCode;
   readonly message: string;
-  readonly cause: AuthError | PostgrestError;
+  /**
+   * `unknown`, not `AuthError | PostgrestError` — `normalizeSupabaseError`
+   * is total (CLAUDE.md §19.1 expected-vs-unexpected split still applies
+   * one layer up, at the caller's `throw`) and must accept *any* shape a
+   * client library, a network layer, or a misconfigured credential can
+   * produce, never assume it matches the two recognized ones.
+   */
+  readonly cause: unknown;
 }
 
 // Postgrest/Postgres codes worth naming explicitly; anything else falls
@@ -66,12 +73,54 @@ function isPostgrestError(error: unknown): error is PostgrestError {
 }
 
 /**
- * Normalizes any error a Supabase call can produce (auth or Postgrest)
- * into the typed `SupabaseError` shape. Call this at the boundary where a
- * Supabase call is made (route handler, server action, service) — per
- * CLAUDE.md §19.3, only boundary layers decide presentation; this is the
- * one place that classification happens so it isn't duplicated per call
- * site.
+ * Walks an arbitrary error value into a plain, JSON-loggable object —
+ * `name`/`message`/`stack` when it's an `Error`, plus any of
+ * `status`/`statusCode`/`code`/`details`/`hint` it happens to carry (fetch
+ * failures, PostgREST bodies, and Auth errors all use different subsets of
+ * these), and recurses into `.cause` so a wrapped error never hides the
+ * thing that actually failed. `seen` guards against a circular `.cause`.
+ */
+function describeError(error: unknown, seen: Set<unknown> = new Set()): unknown {
+  if (error === null || typeof error !== 'object') {
+    return error;
+  }
+  if (seen.has(error)) {
+    return '[circular]';
+  }
+  seen.add(error);
+
+  const record = error as Record<string, unknown>;
+  const description: Record<string, unknown> = {};
+
+  if (error instanceof Error) {
+    description['name'] = error.name;
+    description['message'] = error.message;
+    description['stack'] = error.stack;
+  }
+  for (const key of ['status', 'statusCode', 'code', 'details', 'hint']) {
+    if (record[key] !== undefined) {
+      description[key] = record[key];
+    }
+  }
+  if (record['cause'] !== undefined) {
+    description['cause'] = describeError(record['cause'], seen);
+  }
+
+  return description;
+}
+
+/**
+ * Normalizes any error a Supabase call can produce into the typed
+ * `SupabaseError` shape. Total: accepts `unknown` and never throws — an
+ * unrecognized shape (a raw fetch failure, a misconfigured-credential
+ * rejection, anything neither Auth nor Postgrest shaped) is preserved in
+ * full (logged via `describeError`, kept verbatim as `cause`) and reported
+ * as `DATABASE_UNKNOWN` rather than crashing the boundary that was trying
+ * to handle the *original* failure. Call this at the boundary where a
+ * Supabase call is made (route handler, server action, service, worker) —
+ * per CLAUDE.md §19.3, only boundary layers decide presentation; this is
+ * the one place that classification happens so it isn't duplicated per
+ * call site.
  */
 export function normalizeSupabaseError(error: unknown): SupabaseError {
   if (isAuthError(error)) {
@@ -82,7 +131,14 @@ export function normalizeSupabaseError(error: unknown): SupabaseError {
     return { code: toDatabaseErrorCode(error), message: error.message, cause: error };
   }
 
-  throw error instanceof Error
-    ? error
-    : new Error('Unrecognized error passed to normalizeSupabaseError', { cause: error });
+  console.error(
+    '[supabase] unrecognized error shape passed to normalizeSupabaseError:',
+    JSON.stringify(describeError(error), null, 2),
+  );
+
+  return {
+    code: 'DATABASE_UNKNOWN',
+    message: error instanceof Error ? error.message : 'Unrecognized error from Supabase client',
+    cause: error,
+  };
 }

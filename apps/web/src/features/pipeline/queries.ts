@@ -30,6 +30,10 @@ export async function claimNextAnalysis(
     p_stale_after: `${Math.max(1, Math.round(staleAfterMs / 1000))} seconds`,
   });
   if (error) {
+    // Raw, un-normalized, logged first — this is the exact object
+    // supabase-js handed back for this specific call, before
+    // normalizeSupabaseError's own (now total) handling touches it.
+    console.error('[pipeline] raw claim_next_analysis error:', JSON.stringify(error, null, 2));
     throw normalizeSupabaseError(error);
   }
   return data;

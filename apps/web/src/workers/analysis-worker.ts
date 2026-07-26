@@ -62,10 +62,7 @@ async function main(): Promise<void> {
       // polling. The analysis itself is left in whatever state the
       // orchestrator reached; its heartbeat will go stale and another
       // worker (or this one, after this loop continues) will reclaim it.
-      console.error(
-        `[worker ${workerId}] run failed unexpectedly:`,
-        error instanceof Error ? error.message : error,
-      );
+      logError(`[worker ${workerId}] run failed unexpectedly`, error);
       await sleep(POLL_INTERVAL_MS);
     }
   }
@@ -73,7 +70,22 @@ async function main(): Promise<void> {
   console.warn(`[worker ${workerId}] stopped cleanly`);
 }
 
+/** Logs the full error chain — `.cause` is otherwise silently dropped, which is exactly what hid the real failure the first time this ran on Railway. */
+function logError(prefix: string, error: unknown): void {
+  if (error instanceof Error) {
+    console.error(prefix + ':', error.message);
+    if (error.cause !== undefined) {
+      console.error(prefix + ' (cause):', error.cause);
+    }
+    if (error.stack) {
+      console.error(error.stack);
+    }
+    return;
+  }
+  console.error(prefix + ':', error);
+}
+
 main().catch((error) => {
-  console.error(`[worker ${workerId}] fatal:`, error instanceof Error ? error.message : error);
+  logError(`[worker ${workerId}] fatal`, error);
   process.exit(1);
 });
