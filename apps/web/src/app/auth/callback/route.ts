@@ -4,6 +4,7 @@ import { NextResponse, type NextRequest } from 'next/server';
 import { publicEnv } from '@/config/public-env';
 import { getOrCreateProfile, toSafeRedirectPath } from '@/features/auth/server/service';
 import { captureGithubOAuthCredentials } from '@/features/github/account';
+import { createClient as createSharedClient } from '@/lib/supabase/server';
 import type { Database } from '@/lib/supabase/types';
 
 /**
@@ -60,6 +61,19 @@ export async function GET(request: NextRequest) {
     const { data, error } = await supabase.auth.exchangeCodeForSession(code);
 
     if (!error) {
+      // DIAGNOSTIC ONLY (credential-capture investigation) — does not affect
+      // auth flow or control flow. Confirms whether `lib/supabase/server.ts`'s
+      // shared client (the one `upsertGithubAccount` uses) can see the
+      // session this route just established, or only the pre-auth cookies
+      // it was constructed from (see the two-cookie-jar trace above).
+      console.warn('[auth][diagnostic] session established', { userId: data.session.user.id });
+      const sharedClient = await createSharedClient();
+      const { data: auth } = await sharedClient.auth.getUser();
+      console.warn('[auth][diagnostic] shared client getUser result', {
+        sharedClientUserId: auth.user?.id ?? null,
+        sharedClientUserIsNull: auth.user === null,
+      });
+
       try {
         await getOrCreateProfile(data.user);
       } catch {
