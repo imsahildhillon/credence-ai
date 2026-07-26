@@ -42,6 +42,41 @@ async function recordFailure(
   }
 }
 
+/**
+ * Diagnostic-only: logs everything known about the ingestion stage at the
+ * moment it terminates with `{outcome: 'failure'}`. This stage never touches
+ * `features/analysis`'s `failRun` (a different feature, CLAUDE.md §4) and has
+ * no logging of its own before this — the orchestrator's own log
+ * (`[worker …] analysis <id> → failed`) doesn't distinguish which of these
+ * three kinds fired, or why.
+ */
+function logIngestionFailure(params: {
+  readonly analysisId: string;
+  readonly failureKind: 'empty_snapshot' | 'token_unavailable' | 'no_evidence_collected';
+  readonly githubAccountId: string | null;
+  readonly repositoryCount: number;
+  readonly tokenSource: 'not_yet_resolved' | 'stored' | 'unavailable';
+  readonly error?: unknown;
+}): void {
+  const { analysisId, failureKind, githubAccountId, repositoryCount, tokenSource, error } = params;
+  const asError = error instanceof Error ? error : undefined;
+  console.error(
+    [
+      '[ingestion-failed]',
+      `analysisId: ${analysisId}`,
+      `failureKind: ${failureKind}`,
+      `githubAccountId: ${githubAccountId ?? 'unknown'}`,
+      `repositoryCount: ${repositoryCount}`,
+      `tokenSource: ${tokenSource}`,
+      `error: ${
+        error === undefined
+          ? 'none'
+          : (asError ? `${asError.name}: ${asError.message}\n${asError.stack ?? ''}` : JSON.stringify(error))
+      }`,
+    ].join('\n'),
+  );
+}
+
 export async function ingestAnalysisEvidence(
   analysisId: string,
   checkpoint: () => Promise<'continue' | 'stop'>,
@@ -60,6 +95,13 @@ export async function ingestAnalysisEvidence(
       kind: 'empty_snapshot',
       message: 'Analysis has no repository snapshot.',
       retryable: false,
+    });
+    logIngestionFailure({
+      analysisId,
+      failureKind: 'empty_snapshot',
+      githubAccountId: null, // not resolved yet at this point in the function
+      repositoryCount: snapshot.length,
+      tokenSource: 'not_yet_resolved',
     });
     return {
       outcome: 'failure',
@@ -82,6 +124,13 @@ export async function ingestAnalysisEvidence(
       kind: 'token_unavailable',
       message: 'No usable GitHub credential; the student needs to reconnect GitHub.',
       retryable: true,
+    });
+    logIngestionFailure({
+      analysisId,
+      failureKind: 'token_unavailable',
+      githubAccountId,
+      repositoryCount: snapshot.length,
+      tokenSource: 'unavailable',
     });
     return {
       outcome: 'failure',
@@ -168,6 +217,13 @@ export async function ingestAnalysisEvidence(
       failureCount === 0
         ? 'We could not find any analyzable activity in the repositories you selected.'
         : `Analyzed ${repositoriesProcessed} of ${snapshot.length} repositories; ${failureCount} issue(s) recorded, and no evidence could be collected.`;
+    logIngestionFailure({
+      analysisId,
+      failureKind: 'no_evidence_collected',
+      githubAccountId,
+      repositoryCount: snapshot.length,
+      tokenSource: 'stored',
+    });
     return {
       outcome: 'failure',
       failure: { kind: 'no_evidence_collected', message, retryable: true },
