@@ -149,46 +149,6 @@ export async function persistAssessment(
   return data;
 }
 
-export interface AnalysisCompletion {
-  readonly status: AnalysisStatus;
-  readonly summary: string | null;
-  readonly confidence: ConfidenceLevel | null;
-  readonly model: string | null;
-  readonly pipelineVersion: string;
-  readonly promptVersion: string;
-  readonly errorMessage: string | null;
-}
-
-/**
- * Writes the analysis's terminal state together with the provenance that
- * makes it reproducible: model, pipeline version, and prompt version
- * (CLAUDE.md §14.4). A `completed` analysis is also required by CHECK
- * constraint to carry a summary, a confidence, a model, and a pipeline
- * version — so an assessment that produced nothing cannot claim completion.
- */
-export async function completeAnalysis(
-  analysisId: string,
-  completion: AnalysisCompletion,
-): Promise<void> {
-  const admin = createAdminClient();
-  const { error } = await admin
-    .from('analyses')
-    .update({
-      status: completion.status,
-      summary: completion.summary,
-      confidence: completion.confidence,
-      model: completion.model,
-      pipeline_version: completion.pipelineVersion,
-      prompt_version: completion.promptVersion,
-      error_message: completion.errorMessage,
-      completed_at: new Date().toISOString(),
-    })
-    .eq('id', analysisId);
-  if (error) {
-    throw normalizeSupabaseError(error);
-  }
-}
-
 export async function recordAssessmentError(
   analysisId: string,
   kind: string,

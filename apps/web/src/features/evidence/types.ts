@@ -184,10 +184,24 @@ export interface RepositoryIngestionResult {
   readonly failures: IngestionFailure[];
 }
 
-export interface AnalysisRunSummary {
-  readonly analysisId: string;
-  readonly status: Database['public']['Enums']['analysis_status'];
-  readonly repositoriesProcessed: number;
-  readonly evidenceUpserted: number;
-  readonly failures: number;
+/**
+ * What `ingestAnalysisEvidence` reports back to the pipeline orchestrator
+ * (`features/pipeline`). This stage never writes `analyses.status` itself —
+ * it only returns an outcome; the orchestrator is the sole writer of
+ * lifecycle state (ADR-009).
+ */
+export interface StageFailure {
+  readonly kind: string;
+  readonly message: string;
+  readonly retryable: boolean;
 }
+
+export type IngestionResult =
+  | {
+      readonly outcome: 'success';
+      readonly repositoriesProcessed: number;
+      readonly evidenceUpserted: number;
+      readonly failureCount: number;
+    }
+  | { readonly outcome: 'failure'; readonly failure: StageFailure }
+  | { readonly outcome: 'cancelled' };

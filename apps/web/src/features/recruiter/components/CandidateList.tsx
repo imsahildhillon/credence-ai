@@ -14,10 +14,14 @@ export interface CandidateListProps {
 const PROFILE_STATUS_LABEL: Record<CandidateListItem['profileStatus'], string> = {
   no_analysis: 'Not analyzed yet',
   queued: 'Queued',
+  ingesting: 'Analyzing',
+  assessing: 'Analyzing',
+  finalizing: 'Analyzing',
   processing: 'Analyzing',
   completed: 'Ready',
   partial: 'Partly complete',
   failed: 'Analysis failed',
+  cancelled: 'Cancelled',
 };
 
 const CANDIDATE_STATUS_LABEL: Record<CandidateListItem['status'], string> = {

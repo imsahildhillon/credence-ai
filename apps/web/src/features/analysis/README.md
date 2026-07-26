@@ -6,7 +6,7 @@ The Evidence-Based Skill Assessment Engine: interprets already-normalized engine
 evidence_items → aggregation (dimensions) → Claude → citation validation → skill_assessments + assessment_evidence
 ```
 
-**Public interface** (`index.ts`): `runSkillAssessment(analysisId)`, `PIPELINE_VERSION`, `PROMPT_VERSION`.
+**Public interface** (`index.ts`): `runSkillAssessment(analysisId, checkpoint)`, `PIPELINE_VERSION`, `PROMPT_VERSION`, plus the `AssessmentResult`/`AssessmentSuccess`/`StageFailure` types. Since [ADR-009](../../../../../docs/adr/ADR-009-analysis-pipeline-orchestration.md), this stage **never writes `analyses.status` itself** — it returns a result (`success | failure | cancelled`), and the pipeline orchestrator (`features/pipeline`) is the only caller and the only writer of lifecycle state. `checkpoint` is called once, before the paid Claude call, so a shutting-down worker can stop cleanly before spending money — a plain function type, not imported from `features/pipeline` (this feature depends on nothing there).
 
 - `aggregator.ts` — pure evidence → structured, PII-free summary. Groups evidence into 11 engineering dimensions and attaches each taxonomy skill to the dimensions that inform it.
 - `prompt.ts` — the versioned prompt artifact (stable cacheable system prefix + volatile user payload).

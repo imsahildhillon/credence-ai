@@ -188,14 +188,37 @@ export interface PersistableAssessment {
   readonly evidenceIds: readonly string[];
 }
 
-export interface AssessmentRunSummary {
-  readonly analysisId: string;
-  readonly status: Database['public']['Enums']['analysis_status'];
+/**
+ * What `runSkillAssessment` reports back to the pipeline orchestrator
+ * (`features/pipeline`). This stage never writes `analyses.status` itself —
+ * it only returns an outcome; the orchestrator is the sole writer of
+ * lifecycle state (ADR-009).
+ */
+export interface StageFailure {
+  readonly kind: string;
+  readonly message: string;
+  readonly retryable: boolean;
+  readonly pipelineVersion?: string;
+  readonly promptVersion?: string;
+}
+
+export interface AssessmentSuccess {
+  readonly outcome: 'success';
+  readonly status: 'completed' | 'partial';
+  readonly summary: string;
+  readonly confidence: ConfidenceLevel;
+  readonly model: string;
+  readonly pipelineVersion: string;
+  readonly promptVersion: string;
   readonly skillsAssessed: number;
   readonly evidenceConsidered: number;
-  readonly model: string | null;
-  readonly promptVersion: string;
-  readonly pipelineVersion: string;
+  /** Set when `status === 'partial'` — what was excluded and why (CLAUDE.md §19.5). */
+  readonly partialMessage: string | null;
   /** Present only on a run that actually called the model (CLAUDE.md §17.13). */
   readonly usage?: AiUsage;
 }
+
+export type AssessmentResult =
+  | AssessmentSuccess
+  | { readonly outcome: 'failure'; readonly failure: StageFailure }
+  | { readonly outcome: 'cancelled' };

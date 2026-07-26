@@ -8,10 +8,14 @@ export interface MethodologyProps {
 
 const STATUS_LABEL: Readonly<Record<AnalysisMetadataData['status'], string>> = {
   queued: 'Queued',
+  ingesting: 'Ingesting repositories',
+  assessing: 'Assessing skills',
+  finalizing: 'Finalizing report',
   processing: 'Processing',
   completed: 'Complete',
   partial: 'Partially complete',
   failed: 'Failed',
+  cancelled: 'Cancelled',
 };
 
 /**

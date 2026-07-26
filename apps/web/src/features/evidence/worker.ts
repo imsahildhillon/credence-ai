@@ -3,44 +3,38 @@ import 'server-only';
 import { GithubError, markGithubCredentialRevoked, readGithubAccessToken } from '@/features/github';
 
 import {
-  claimNextQueuedAnalysis,
-  finishAnalysis,
   getAnalysis,
   getGithubAccountIdForProfile,
   listAnalysisSnapshotRows,
-  markAnalysisProcessing,
   recordAnalysisError,
   upsertEvidence,
 } from './queries';
 import { ingestRepositoryEvidence } from './service';
-import type { AnalysisRunSummary, IngestionFailure } from './types';
+import type { IngestionFailure, IngestionResult } from './types';
 
 /**
- * The analysis worker: turns a queued job into normalized evidence.
- *
- * Lifecycle — `queued → processing → completed | partial | failed`, with
- * `started_at` / `completed_at` persisted at each transition so a stalled job
- * is detectable (CLAUDE.md §19.6: a job never sits in `processing` limbo
- * silently, and every terminal state is user-visible).
+ * The ingestion stage: turns a claimed analysis into normalized evidence.
+ * Returns an outcome; it never writes `analyses.status` itself — the
+ * pipeline orchestrator (`features/pipeline`) is the only writer of
+ * lifecycle state (ADR-009). Claiming (queued/stale → `ingesting`) already
+ * happened before this is called, via `claim_next_analysis()`.
  *
  * Isolation — one repository failing (deleted, renamed, private, rate-limited)
- * records an `analysis_errors` row and the run continues with the rest. The
- * job then finishes `partial`, so the product can say exactly what was
- * excluded and why rather than pretending the report is complete
- * (CLAUDE.md §19.5).
+ * records an `analysis_errors` row and the run continues with the rest.
  *
- * This is a plain async processor, invoked today by the trigger route. When
- * the BullMQ spine (CLAUDE.md §14) lands, the queue calls `processAnalysis`
- * unchanged — only the invocation moves.
+ * `checkpoint` is called between repositories so a long-running ingestion
+ * can observe worker shutdown or (future) cancellation. It's a plain
+ * function type, not imported from `features/pipeline` — this feature
+ * depends on nothing there (CLAUDE.md §4).
  */
 
 async function recordFailure(
   analysisId: string,
   repositoryId: string | null,
-  failure: IngestionFailure,
+  ingestionFailure: IngestionFailure,
 ): Promise<void> {
   try {
-    await recordAnalysisError(analysisId, repositoryId, failure);
+    await recordAnalysisError(analysisId, repositoryId, ingestionFailure);
   } catch {
     // Losing the error record must not lose the run; the terminal status
     // still reflects that something failed.
@@ -48,14 +42,13 @@ async function recordFailure(
   }
 }
 
-export async function processAnalysis(analysisId: string): Promise<AnalysisRunSummary> {
+export async function ingestAnalysisEvidence(
+  analysisId: string,
+  checkpoint: () => Promise<'continue' | 'stop'>,
+): Promise<IngestionResult> {
   const analysis = await getAnalysis(analysisId);
-
   if (!analysis) {
     throw new Error(`Analysis ${analysisId} not found`);
-  }
-  if (analysis.status === 'queued') {
-    await markAnalysisProcessing(analysisId);
   }
 
   const snapshot = await listAnalysisSnapshotRows(analysisId);
@@ -68,13 +61,13 @@ export async function processAnalysis(analysisId: string): Promise<AnalysisRunSu
       message: 'Analysis has no repository snapshot.',
       retryable: false,
     });
-    await finishAnalysis(analysisId, 'failed', 'No repositories were snapshotted for this run.');
     return {
-      analysisId,
-      status: 'failed',
-      repositoriesProcessed: 0,
-      evidenceUpserted: 0,
-      failures: 1,
+      outcome: 'failure',
+      failure: {
+        kind: 'empty_snapshot',
+        message: 'No repositories were snapshotted for this run.',
+        retryable: false,
+      },
     };
   }
 
@@ -90,17 +83,13 @@ export async function processAnalysis(analysisId: string): Promise<AnalysisRunSu
       message: 'No usable GitHub credential; the student needs to reconnect GitHub.',
       retryable: true,
     });
-    await finishAnalysis(
-      analysisId,
-      'failed',
-      'We could not reach GitHub on your behalf. Reconnect GitHub and start the analysis again.',
-    );
     return {
-      analysisId,
-      status: 'failed',
-      repositoriesProcessed: 0,
-      evidenceUpserted: 0,
-      failures: 1,
+      outcome: 'failure',
+      failure: {
+        kind: 'token_unavailable',
+        message: 'We could not reach GitHub on your behalf. Reconnect GitHub and start the analysis again.',
+        retryable: true,
+      },
     };
   }
 
@@ -110,6 +99,10 @@ export async function processAnalysis(analysisId: string): Promise<AnalysisRunSu
   let credentialRevoked = false;
 
   for (const repository of snapshot) {
+    if ((await checkpoint()) === 'stop') {
+      return { outcome: 'cancelled' };
+    }
+
     if (credentialRevoked) {
       // The token died mid-run; every remaining repository would fail the
       // same way. Record it once per repository so the gap is explicit,
@@ -127,9 +120,9 @@ export async function processAnalysis(analysisId: string): Promise<AnalysisRunSu
     try {
       const { evidence, failures } = await ingestRepositoryEvidence(token, repository);
 
-      for (const failure of failures) {
+      for (const ingestionFailure of failures) {
         failureCount += 1;
-        await recordFailure(analysisId, repository.repository_id, failure);
+        await recordFailure(analysisId, repository.repository_id, ingestionFailure);
       }
 
       if (evidence.length > 0) {
@@ -170,59 +163,16 @@ export async function processAnalysis(analysisId: string): Promise<AnalysisRunSu
     }
   }
 
-  // Ingestion is a stage, not the whole analysis. If it produced evidence,
-  // the job stays `processing` and hands off to the assessment stage, which
-  // owns the terminal `completed`/`partial` state and the summary,
-  // confidence, model, and pipeline version a completed analysis is required
-  // by CHECK constraint to carry. Marking `completed` here would both violate
-  // that constraint and claim a finished report before anything had been
-  // assessed. Producing no evidence at all is genuinely terminal.
   if (evidenceUpserted === 0) {
     const message =
       failureCount === 0
         ? 'We could not find any analyzable activity in the repositories you selected.'
         : `Analyzed ${repositoriesProcessed} of ${snapshot.length} repositories; ${failureCount} issue(s) recorded, and no evidence could be collected.`;
-    await finishAnalysis(analysisId, 'failed', message);
-
     return {
-      analysisId,
-      status: 'failed',
-      repositoriesProcessed,
-      evidenceUpserted,
-      failures: failureCount,
+      outcome: 'failure',
+      failure: { kind: 'no_evidence_collected', message, retryable: true },
     };
   }
 
-  return {
-    analysisId,
-    status: 'processing',
-    repositoriesProcessed,
-    evidenceUpserted,
-    failures: failureCount,
-  };
-}
-
-/**
- * Claims the oldest queued job (atomically, via `FOR UPDATE SKIP LOCKED`) and
- * processes it. Returns null when the queue is empty. Safe to run from
- * several workers concurrently — two can never claim the same job.
- */
-export async function processNextQueuedAnalysis(): Promise<AnalysisRunSummary | null> {
-  const analysisId = await claimNextQueuedAnalysis();
-  if (!analysisId) {
-    return null;
-  }
-
-  try {
-    return await processAnalysis(analysisId);
-  } catch (error) {
-    // The job was already moved to `processing` by the claim; make sure it
-    // reaches a terminal state instead of being stranded there.
-    await finishAnalysis(
-      analysisId,
-      'failed',
-      error instanceof Error ? error.message : 'Analysis failed unexpectedly.',
-    );
-    throw error;
-  }
+  return { outcome: 'success', repositoriesProcessed, evidenceUpserted, failureCount };
 }

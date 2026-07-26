@@ -9,21 +9,18 @@ import { trackEvent } from '@/features/analytics';
 import { getCurrentUser } from '@/features/auth/server/service';
 import { AnalysisPipeline } from '@/features/github/components/AnalysisPipeline';
 import { SubmitButton } from '@/features/github/components/SubmitButton';
-import {
-  getAnalysisProgress,
-  getLatestAnalysis,
-  listAnalysisSnapshot,
-} from '@/features/github/queries';
+import { getLatestAnalysis, listAnalysisSnapshot } from '@/features/github/queries';
 import { connectGithubAction, startAnalysisAction } from '@/features/github/server-actions';
-import { deriveAnalysisStages } from '@/features/github/types';
+import { computeAnalysisProgress, deriveAnalysisStages } from '@/features/github/types';
 import { classifyAnalysisFailure } from '@/features/profile/server/failure-classification';
 
 export const metadata: Metadata = { title: 'Your analysis — Credence AI' };
 
 /**
- * Post-onboarding holding screen. A live pipeline, not a spinner: every
- * stage transition reflects a real row the worker has actually written
- * (`getAnalysisProgress`) — never a percentage, never an estimate
+ * Post-onboarding holding screen. A live pipeline, not a spinner: the
+ * pipeline orchestrator (`features/pipeline`, ADR-009) writes
+ * `analyses.status` at every real lifecycle transition, so this screen
+ * reflects exactly that — never a percentage, never an estimate
  * (CLAUDE.md §21.5, Brand Guidelines §12).
  *
  * It reads the job's **immutable snapshot**, not the student's current
@@ -109,26 +106,42 @@ export default async function AnalysisPage() {
     );
   }
 
+  if (analysis.status === 'cancelled') {
+    // Not a failure — most likely the worker restarted mid-run (a Railway
+    // deploy, for instance) and this run's lease was never reclaimed
+    // automatically. Starting again enqueues a fresh run; the old one stays
+    // a truthful, terminal record rather than silently vanishing.
+    return (
+      <div className="mx-auto flex w-full max-w-xl flex-col gap-8">
+        <ErrorState
+          title="This analysis was interrupted"
+          description="The worker running this analysis restarted before it finished. Nothing was lost — start it again to pick up where a fresh run would begin."
+          action={
+            <form action={startAnalysisAction}>
+              <SubmitButton pendingLabel="Starting…">Start analysis again</SubmitButton>
+            </form>
+          }
+        />
+      </div>
+    );
+  }
+
   const snapshot = await listAnalysisSnapshot(analysis.id);
-  const progress = await getAnalysisProgress(analysis);
+  const progress = computeAnalysisProgress(analysis);
   const stages = deriveAnalysisStages(progress);
 
   return (
     <div className="mx-auto flex w-full max-w-xl flex-col gap-8">
-      <div className="flex flex-col gap-1">
-        <h1 className="text-h2">Analyzing your engineering work</h1>
-        <p className="text-caption">
-          {snapshot.length > 0
-            ? `${snapshot.length} repositor${snapshot.length === 1 ? 'y' : 'ies'} in this run.`
-            : 'Preparing this run.'}
-        </p>
-      </div>
-
       <AnalysisPipeline
         analysisId={analysis.id}
         initialStatus={analysis.status}
         initialStages={stages}
         initialStartedAt={analysis.started_at}
+        subtitle={
+          snapshot.length > 0
+            ? `${snapshot.length} repositor${snapshot.length === 1 ? 'y' : 'ies'} in this run.`
+            : 'Preparing this run.'
+        }
       />
 
       {snapshot.length > 0 ? (

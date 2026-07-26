@@ -186,8 +186,9 @@ analysis job → analysis_repositories (immutable snapshot)
 | `mapper.ts` | Pure normalization: GitHub shape → `NormalizedEvidence` → row. |
 | `service.ts` | Per-repository collection; runs each stage guarded so one failure doesn't lose the rest. |
 | `queries.ts` | Service-role data access (the worker has no session). |
-| `worker.ts` | Job lifecycle, per-repository isolation, terminal status. |
-| `env.ts` | Worker trigger secret. |
+| `worker.ts` | `ingestAnalysisEvidence(analysisId, checkpoint)` — per-repository isolation, returns an `IngestionResult`. Since [ADR-009](adr/ADR-009-analysis-pipeline-orchestration.md) it never writes `analyses.status` itself; the pipeline orchestrator does. |
+| `link-liveness.ts` / `link-liveness-worker.ts` | Re-verifies `external_url` against the authoritative REST API and writes `link_checked_at`/`link_dead_at`. |
+| `env.ts` | Worker trigger secret (still used by the manual `/api/v1/analyses/run` escape hatch and `/api/v1/evidence/verify-links`). |
 
 ### Normalization strategy
 
@@ -203,7 +204,7 @@ Unique key `(repository_id, source_type, github_id)`, persisted with a single ba
 
 ### Retry strategy
 
-Because ingestion is idempotent, **retry is at the job level** — re-running a `partial`/`failed` analysis is always safe, with no partial write to reconcile. Failures are recorded per repository/stage in `analysis_errors` with a `retryable` flag (rate limit, network, reconnected credential → retryable; repository genuinely gone → not). A revoked token is raised once, marks the credential revoked, and skips the remaining repositories with an explicit reason instead of hammering GitHub. There is no automatic backoff scheduler yet; the trigger endpoint is invoked externally.
+Because ingestion is idempotent, **retry is at the job level** — re-running a `partial`/`failed` analysis is always safe, with no partial write to reconcile. Failures are recorded per repository/stage in `analysis_errors` with a `retryable` flag (rate limit, network, reconnected credential → retryable; repository genuinely gone → not). A revoked token is raised once, marks the credential revoked, and skips the remaining repositories with an explicit reason instead of hammering GitHub. Crash/stall recovery (a worker dying mid-run) is handled one layer up, by the pipeline orchestrator's lease/heartbeat mechanism — see [Analysis Pipeline Orchestration](#analysis-pipeline-orchestration) below.
 
 ### Performance
 
@@ -262,11 +263,51 @@ Every run writes `model`, `pipeline_version` (`assessment-v1`), and `prompt_vers
 
 ### Trigger
 
-`POST /api/v1/analyses/assess` with the same machine-to-machine bearer secret as ingestion, deliberately separate from `/analyses/process`: ingestion is network-bound and cheap to retry, assessment is model-bound and costs real money. A transient GitHub failure must never re-run a paid assessment.
+`runSkillAssessment(analysisId, checkpoint)` is called by the pipeline orchestrator ([ADR-009](adr/ADR-009-analysis-pipeline-orchestration.md)) as the second stage of one claimed run — not a separately-triggered HTTP endpoint. It returns an `AssessmentResult` and never writes `analyses.status` itself; the orchestrator decides `completed` vs `partial` vs `failed` and writes it. This keeps the historical seam intact for a different reason now: ingestion and assessment are still logically distinct stages (network-bound/cheap-to-retry vs. model-bound/costs real money) inside the same lifecycle, rather than two independently-triggered jobs.
 
 ### Known gap
 
 The golden-dataset eval suite now exists (see the AI Evaluation Framework section below) but has no promoted baseline yet — the first real run against a valid API key must be reviewed and promoted (`npm run eval -- --promote`) before regression detection has anything to compare against.
+
+## Analysis Pipeline Orchestration
+
+Implements [ADR-009](adr/ADR-009-analysis-pipeline-orchestration.md). Module: `apps/web/src/features/pipeline/`; standalone entrypoint: `apps/web/src/workers/analysis-worker.ts`.
+
+```
+User → Vercel (Next.js, enqueues via startAnalysisAction)
+     → Supabase (analyses row = the queue; heartbeat/lease columns)
+     → Railway (analysis-worker.ts, long-lived process, polls continuously)
+         claim → ingesting → assessing → finalizing → completed | partial | failed | cancelled
+     → Engineering Report (features/profile)
+```
+
+### Why this exists
+
+Two production-blocking gaps were found by audit: nothing ever called the old `/api/v1/analyses/process` trigger (two real analyses sat `queued` for 9–10 hours), and even a triggered ingestion had nothing to call `/api/v1/analyses/assess` afterward for that specific run. Both traced to `analyses.status` doing two jobs at once (outcome + queue position) with no liveness signal — a stalled run and a healthy one were indistinguishable.
+
+### One orchestrator, one terminal state
+
+`features/pipeline/orchestrator.ts` is the **only** code that writes `analyses.status` after the initial `queued` insert. `ingestAnalysisEvidence` (`features/evidence`) and `runSkillAssessment` (`features/analysis`) each return a result (`success | failure | cancelled`) — they never write lifecycle state themselves. Both are called through their feature's public `index.ts`; neither imports the other or `features/pipeline` (CLAUDE.md §4 dependency direction preserved).
+
+### Lifecycle is one column
+
+`analysis_status` carries `queued → ingesting → assessing → finalizing → completed | partial | failed | cancelled` directly. No separate "stage" column — extending the existing enum was simpler and there was no consumer requiring the two concepts to be split.
+
+### Liveness, leases, retries
+
+- `claim_next_analysis(worker_id, stale_after)` — a Postgres function using `FOR UPDATE SKIP LOCKED` — claims a fresh `queued` row or reclaims a `processing`-family row whose `heartbeat_at` has gone stale, bounded by `attempt_count < 3`.
+- The orchestrator refreshes `heartbeat_at` at every checkpoint (`claimed`, after ingestion, after assessment, before finalizing).
+- `analysis_events` is an append-only observability log, one row per checkpoint — the audit trail and the UI's data source for progress detail.
+- **Retries are crash recovery, not automatic re-attempt.** A logical failure (no evidence, no assessable skills) is a genuine terminal `failed`; only a stalled *lease* is reclaimed automatically. Idempotency in both stages (evidence upserts, append-only assessments) is what makes reclaim-and-resume safe — this module relies on that property, it didn't introduce it.
+- `cancellation_requested_at` exists and every checkpoint checks it, but nothing sets it yet (groundwork only, same pattern as `evidence_items.link_dead_at`). The same checkpoint doubles as the graceful-shutdown signal for the worker process.
+
+### Deployment: Railway (worker) + Vercel (web) + Supabase (queue/data)
+
+`workers/analysis-worker.ts` is a plain long-lived Node process — not a Next.js request, route, or `after()` callback, none of which escape a serverless wall-clock limit. It polls continuously via `runNextAnalysis()`, has no timeout, and knows nothing about Railway; `Dockerfile`/`railway.json` at the repo root are thin wrappers that only exist to run that one file. Supabase Postgres remains the queue — no new queue infrastructure (Redis/BullMQ) was introduced.
+
+`POST /api/v1/analyses/run` replaces both `/process` and `/assess` as a manual, secret-authenticated escape hatch (process one claimable job on demand) — the worker is the real production driver, not this route.
+
+**Operational runbook:** see `docs/runbooks/deploy-analysis-worker.md`.
 
 ## AI Evaluation Framework
 

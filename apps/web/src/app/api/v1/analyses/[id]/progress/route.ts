@@ -2,8 +2,8 @@ import { NextResponse } from 'next/server';
 import { z } from 'zod';
 
 import { getCurrentUser } from '@/features/auth/server/service';
-import { getAnalysisById, getAnalysisProgress } from '@/features/github/queries';
-import { deriveAnalysisStages } from '@/features/github/types';
+import { getAnalysisById } from '@/features/github/queries';
+import { computeAnalysisProgress, deriveAnalysisStages } from '@/features/github/types';
 
 /**
  * Read-only progress for the analysis waiting screen (`/analysis`), polled
@@ -41,10 +41,11 @@ export async function GET(_request: Request, { params }: { params: Promise<{ id:
     );
   }
 
-  const progress = await getAnalysisProgress(analysis);
+  const progress = computeAnalysisProgress(analysis);
   return NextResponse.json({
     status: progress.status,
     startedAt: progress.startedAt,
+    isStalled: progress.isStalled,
     stages: deriveAnalysisStages(progress),
   });
 }

@@ -12,6 +12,7 @@
     "format:check": "npm run format:check --workspaces --if-present",
     "check": "npm run lint && npm run typecheck && npm run build",
     "eval": "npm run eval --workspace=apps/web",
-    "eval:report": "npm run eval:report --workspace=apps/web"
+    "eval:report": "npm run eval:report --workspace=apps/web",
+    "worker": "npm run worker --workspace=apps/web"
   }
 }

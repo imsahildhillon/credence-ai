@@ -116,29 +116,47 @@ export type ImportResult =
   | { readonly status: 'error'; readonly kind: GithubErrorKind; readonly message: string };
 
 /**
- * Raw, verifiable facts about a running analysis — every field is a direct
- * count or existence check against rows the worker actually wrote, never an
- * estimate or a fabricated percentage (CLAUDE.md §21.5: never fake progress).
+ * Raw, directly-observed facts about a running analysis (ADR-009) — the
+ * pipeline orchestrator writes `analyses.status`/`heartbeat_at` itself at
+ * every real lifecycle transition, so there is nothing left to infer from
+ * row counts. `isStalled` is the one derived fact here, and it's derived
+ * from a timestamp comparison, never a guess (CLAUDE.md §21.5: never fake
+ * progress).
  */
 export interface AnalysisProgress {
   readonly status: AnalysisRow['status'];
   readonly startedAt: string | null;
-  readonly repositoryCount: number;
-  readonly hasRepositoryEvidence: boolean;
-  readonly hasCommitEvidence: boolean;
-  readonly hasExtractedEvidence: boolean;
-  readonly hasSkillAssessments: boolean;
+  readonly heartbeatAt: string | null;
+  readonly isStalled: boolean;
 }
 
-export type PipelineStageId =
-  | 'queue_accepted'
-  | 'fetching_repositories'
-  | 'reading_commits'
-  | 'extracting_evidence'
-  | 'building_report'
-  | 'complete';
+/** A claimed run whose heartbeat hasn't been refreshed past this threshold is stalled — matches `claim_next_analysis`'s default reclaim window. */
+const STALE_AFTER_MS = 5 * 60 * 1000;
 
-export type PipelineStageState = 'pending' | 'active' | 'complete';
+const IN_PROGRESS_STATUSES = new Set<AnalysisRow['status']>([
+  'processing',
+  'ingesting',
+  'assessing',
+  'finalizing',
+]);
+
+export function computeAnalysisProgress(analysis: AnalysisRow): AnalysisProgress {
+  const isStalled =
+    IN_PROGRESS_STATUSES.has(analysis.status) &&
+    analysis.heartbeat_at !== null &&
+    Date.now() - new Date(analysis.heartbeat_at).getTime() > STALE_AFTER_MS;
+
+  return {
+    status: analysis.status,
+    startedAt: analysis.started_at,
+    heartbeatAt: analysis.heartbeat_at,
+    isStalled,
+  };
+}
+
+export type PipelineStageId = 'queued' | 'ingesting' | 'assessing' | 'finalizing' | 'complete';
+
+export type PipelineStageState = 'pending' | 'active' | 'complete' | 'stalled';
 
 export interface PipelineStage {
   readonly id: PipelineStageId;
@@ -147,36 +165,45 @@ export interface PipelineStage {
 }
 
 const STAGE_LABELS: Readonly<Record<PipelineStageId, string>> = {
-  queue_accepted: 'Queue accepted',
-  fetching_repositories: 'Fetching repositories',
-  reading_commits: 'Reading commits',
-  extracting_evidence: 'Extracting engineering evidence',
-  building_report: 'Building engineering report',
+  queued: 'Queue accepted',
+  ingesting: 'Ingesting repositories',
+  assessing: 'Assessing skills',
+  finalizing: 'Finalizing report',
   complete: 'Complete',
 };
 
 const STAGE_ORDER: readonly PipelineStageId[] = [
-  'queue_accepted',
-  'fetching_repositories',
-  'reading_commits',
-  'extracting_evidence',
-  'building_report',
+  'queued',
+  'ingesting',
+  'assessing',
+  'finalizing',
   'complete',
 ];
 
+/** Maps every real `analyses.status` value onto the stage it belongs to. */
+function stageIdForStatus(status: AnalysisRow['status']): PipelineStageId {
+  switch (status) {
+    case 'queued':
+      return 'queued';
+    case 'ingesting':
+    case 'processing':
+      return 'ingesting';
+    case 'assessing':
+      return 'assessing';
+    case 'finalizing':
+      return 'finalizing';
+    default:
+      return 'queued';
+  }
+}
+
 /**
- * Turns raw progress facts into a stage list. Each stage's state is derived
- * from something that actually happened — a row that exists, a status the
- * worker wrote — never from elapsed time or a guess. The mapping is
- * necessarily approximate at the boundary between two adjacent stages (e.g.
- * "fetching repositories" is inferred to be running the moment before any
- * repository evidence has landed, not because we observed a "fetch started"
- * event — no such event is persisted today), but every "complete" claim is
- * backed by a real, checkable fact, and nothing here ever renders a
- * percentage.
+ * Turns the analysis's own directly-observed status into a stage list —
+ * no inference, no percentage. Every "complete" claim is a status the
+ * orchestrator itself wrote (ADR-009).
  */
 export function deriveAnalysisStages(progress: AnalysisProgress): readonly PipelineStage[] {
-  if (progress.status === 'failed') {
+  if (progress.status === 'failed' || progress.status === 'cancelled') {
     return STAGE_ORDER.map((id) => ({ id, label: STAGE_LABELS[id], state: 'pending' }));
   }
 
@@ -184,34 +211,14 @@ export function deriveAnalysisStages(progress: AnalysisProgress): readonly Pipel
     return STAGE_ORDER.map((id) => ({ id, label: STAGE_LABELS[id], state: 'complete' }));
   }
 
-  if (progress.status === 'queued') {
-    return STAGE_ORDER.map((id, index) => ({
-      id,
-      label: STAGE_LABELS[id],
-      state: index === 0 ? 'active' : 'pending',
-    }));
-  }
+  const activeIndex = STAGE_ORDER.indexOf(stageIdForStatus(progress.status));
 
-  // 'processing': each boolean is a fact about rows that exist right now.
-  const completedFlags: Readonly<Record<Exclude<PipelineStageId, 'complete'>, boolean>> = {
-    queue_accepted: true,
-    fetching_repositories: progress.hasRepositoryEvidence,
-    reading_commits: progress.hasCommitEvidence,
-    extracting_evidence: progress.hasExtractedEvidence,
-    building_report: progress.hasSkillAssessments,
-  };
-
-  let activeAssigned = false;
-  return STAGE_ORDER.map((id) => {
-    if (id === 'complete') {
-      return { id, label: STAGE_LABELS[id], state: 'pending' as const };
-    }
-    if (completedFlags[id]) {
+  return STAGE_ORDER.map((id, index) => {
+    if (index < activeIndex) {
       return { id, label: STAGE_LABELS[id], state: 'complete' as const };
     }
-    if (!activeAssigned) {
-      activeAssigned = true;
-      return { id, label: STAGE_LABELS[id], state: 'active' as const };
+    if (index === activeIndex) {
+      return { id, label: STAGE_LABELS[id], state: progress.isStalled ? 'stalled' : 'active' };
     }
     return { id, label: STAGE_LABELS[id], state: 'pending' as const };
   });

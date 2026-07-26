@@ -4,4 +4,10 @@
  */
 export { PIPELINE_VERSION, runSkillAssessment } from './service';
 export { PROMPT_VERSION } from './prompt';
-export type { AssessmentRunSummary, AssessmentLevel, ConfidenceLevel } from './types';
+export type {
+  AssessmentResult,
+  AssessmentSuccess,
+  AssessmentLevel,
+  ConfidenceLevel,
+  StageFailure,
+} from './types';

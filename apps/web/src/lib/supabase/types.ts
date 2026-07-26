@@ -22,11 +22,15 @@ export type Database = {
     Tables: {
       analyses: {
         Row: {
+          attempt_count: number
+          cancellation_requested_at: string | null
+          claimed_by: string | null
           completed_at: string | null
           confidence: Database["public"]["Enums"]["confidence_level"] | null
           created_at: string
           error_message: string | null
           evidence_item_id: string | null
+          heartbeat_at: string | null
           id: string
           model: string | null
           pipeline_version: string | null
@@ -38,11 +42,15 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          attempt_count?: number
+          cancellation_requested_at?: string | null
+          claimed_by?: string | null
           completed_at?: string | null
           confidence?: Database["public"]["Enums"]["confidence_level"] | null
           created_at?: string
           error_message?: string | null
           evidence_item_id?: string | null
+          heartbeat_at?: string | null
           id?: string
           model?: string | null
           pipeline_version?: string | null
@@ -54,11 +62,15 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          attempt_count?: number
+          cancellation_requested_at?: string | null
+          claimed_by?: string | null
           completed_at?: string | null
           confidence?: Database["public"]["Enums"]["confidence_level"] | null
           created_at?: string
           error_message?: string | null
           evidence_item_id?: string | null
+          heartbeat_at?: string | null
           id?: string
           model?: string | null
           pipeline_version?: string | null
@@ -82,6 +94,38 @@ export type Database = {
             columns: ["profile_id"]
             isOneToOne: false
             referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      analysis_events: {
+        Row: {
+          analysis_id: string
+          created_at: string
+          event_type: string
+          id: string
+          metadata: Json
+        }
+        Insert: {
+          analysis_id: string
+          created_at?: string
+          event_type: string
+          id?: string
+          metadata?: Json
+        }
+        Update: {
+          analysis_id?: string
+          created_at?: string
+          event_type?: string
+          id?: string
+          metadata?: Json
+        }
+        Relationships: [
+          {
+            foreignKeyName: "analysis_events_analysis_id_fkey"
+            columns: ["analysis_id"]
+            isOneToOne: false
+            referencedRelation: "analyses"
             referencedColumns: ["id"]
           },
         ]
@@ -912,7 +956,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      claim_next_queued_analysis: { Args: never; Returns: string }
+      claim_next_analysis: {
+        Args: { p_stale_after?: string; p_worker_id: string }
+        Returns: string
+      }
       current_consent: {
         Args: {
           p_profile_id: string
@@ -947,6 +994,10 @@ export type Database = {
     Enums: {
       analysis_status:
         | "queued"
+        | "ingesting"
+        | "assessing"
+        | "finalizing"
+        | "cancelled"
         | "processing"
         | "completed"
         | "failed"
@@ -1099,6 +1150,10 @@ export const Constants = {
     Enums: {
       analysis_status: [
         "queued",
+        "ingesting",
+        "assessing",
+        "finalizing",
+        "cancelled",
         "processing",
         "completed",
         "failed",

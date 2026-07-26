@@ -11,7 +11,8 @@
     "format": "prettier --write .",
     "format:check": "prettier --check .",
     "eval": "NODE_OPTIONS=--conditions=react-server tsx --env-file-if-exists=.env.local scripts/eval.ts",
-    "eval:report": "NODE_OPTIONS=--conditions=react-server tsx --env-file-if-exists=.env.local scripts/eval-report.ts"
+    "eval:report": "NODE_OPTIONS=--conditions=react-server tsx --env-file-if-exists=.env.local scripts/eval-report.ts",
+    "worker": "NODE_OPTIONS=--conditions=react-server tsx --env-file-if-exists=.env.local src/workers/analysis-worker.ts"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.115.0",

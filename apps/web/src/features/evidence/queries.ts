@@ -12,8 +12,6 @@ import type {
   NormalizedEvidence,
 } from './types';
 
-type AnalysisStatus = Database['public']['Enums']['analysis_status'];
-
 /**
  * Data access for the evidence pipeline.
  *
@@ -24,15 +22,6 @@ type AnalysisStatus = Database['public']['Enums']['analysis_status'];
  * ownership-validated in SQL when it was created (ADR-005). No repository
  * identifier ever originates from a client.
  */
-
-export async function claimNextQueuedAnalysis(): Promise<string | null> {
-  const admin = createAdminClient();
-  const { data, error } = await admin.rpc('claim_next_queued_analysis');
-  if (error) {
-    throw normalizeSupabaseError(error);
-  }
-  return data ?? null;
-}
 
 export async function getAnalysis(analysisId: string): Promise<AnalysisRow | null> {
   const admin = createAdminClient();
@@ -74,36 +63,6 @@ export async function getGithubAccountIdForProfile(profileId: string): Promise<s
     throw normalizeSupabaseError(error);
   }
   return data?.id ?? null;
-}
-
-export async function markAnalysisProcessing(analysisId: string): Promise<void> {
-  const admin = createAdminClient();
-  const { error } = await admin
-    .from('analyses')
-    .update({ status: 'processing', started_at: new Date().toISOString() })
-    .eq('id', analysisId);
-  if (error) {
-    throw normalizeSupabaseError(error);
-  }
-}
-
-export async function finishAnalysis(
-  analysisId: string,
-  status: AnalysisStatus,
-  errorMessage?: string | null,
-): Promise<void> {
-  const admin = createAdminClient();
-  const { error } = await admin
-    .from('analyses')
-    .update({
-      status,
-      completed_at: new Date().toISOString(),
-      error_message: errorMessage ?? null,
-    })
-    .eq('id', analysisId);
-  if (error) {
-    throw normalizeSupabaseError(error);
-  }
 }
 
 /**

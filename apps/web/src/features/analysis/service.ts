@@ -11,7 +11,6 @@ import {
   buildAssessmentUserContent,
 } from './prompt';
 import {
-  completeAnalysis,
   countRepositoriesWithErrors,
   getAnalysisContext,
   getCandidateGithubLogin,
@@ -22,7 +21,7 @@ import {
   recordAssessmentError,
 } from './queries';
 import { buildAssessmentOutputSchema } from './types';
-import type { AssessmentRunSummary, ConfidenceLevel } from './types';
+import type { AssessmentResult, ConfidenceLevel } from './types';
 
 /**
  * The Evidence-Based Skill Assessment Engine.
@@ -68,7 +67,7 @@ async function failRun(
   operatorMessage: string,
   userMessage: string,
   retryable: boolean,
-): Promise<AssessmentRunSummary> {
+): Promise<AssessmentResult> {
   try {
     await recordAssessmentError(analysisId, kind, operatorMessage, retryable);
   } catch {
@@ -76,28 +75,30 @@ async function failRun(
     console.error('[analysis] could not persist assessment error record');
   }
 
-  await completeAnalysis(analysisId, {
-    status: 'failed',
-    summary: null,
-    confidence: null,
-    model: null,
-    pipelineVersion: PIPELINE_VERSION,
-    promptVersion: PROMPT_VERSION,
-    errorMessage: userMessage,
-  });
-
   return {
-    analysisId,
-    status: 'failed',
-    skillsAssessed: 0,
-    evidenceConsidered: 0,
-    model: null,
-    promptVersion: PROMPT_VERSION,
-    pipelineVersion: PIPELINE_VERSION,
+    outcome: 'failure',
+    failure: {
+      kind,
+      message: userMessage,
+      retryable,
+      pipelineVersion: PIPELINE_VERSION,
+      promptVersion: PROMPT_VERSION,
+    },
   };
 }
 
-export async function runSkillAssessment(analysisId: string): Promise<AssessmentRunSummary> {
+/**
+ * `checkpoint` is called once, before the paid Claude call — a plain
+ * function type, not imported from `features/pipeline` (this feature
+ * depends on nothing there, CLAUDE.md §4). Returning `{outcome:
+ * 'cancelled'}` here is deliberately the *only* checkpoint in this stage:
+ * once the model call starts, letting it run to completion and persisting
+ * normally is cheaper and safer than trying to abort mid-persist.
+ */
+export async function runSkillAssessment(
+  analysisId: string,
+  checkpoint: () => Promise<'continue' | 'stop'>,
+): Promise<AssessmentResult> {
   const analysis = await getAnalysisContext(analysisId);
 
   if (!analysis) {
@@ -146,6 +147,10 @@ export async function runSkillAssessment(analysisId: string): Promise<Assessment
       'We could not match your work to any of the skills we assess yet.',
       false,
     );
+  }
+
+  if ((await checkpoint()) === 'stop') {
+    return { outcome: 'cancelled' };
   }
 
   let completion;
@@ -223,29 +228,23 @@ export async function runSkillAssessment(analysisId: string): Promise<Assessment
   // Honest terminal state: anything excluded — an unreadable repository, a
   // rejected citation, a refused row — makes this partial, and the product
   // says so rather than presenting an incomplete report as complete
-  // (CLAUDE.md §19.5).
+  // (CLAUDE.md §19.5). This function only *reports* that decision — the
+  // pipeline orchestrator is the one that writes it (ADR-009).
   const incomplete = rejected.length > 0 || persistFailures > 0 || repositoriesWithErrors > 0;
 
-  await completeAnalysis(analysisId, {
+  return {
+    outcome: 'success',
     status: incomplete ? 'partial' : 'completed',
     summary: completion.output.overallSummary,
     confidence: lowestConfidence(persistedLevels),
     model: completion.model,
     pipelineVersion: PIPELINE_VERSION,
     promptVersion: PROMPT_VERSION,
-    errorMessage: incomplete
-      ? `Assessed ${persistedLevels.length} skill(s); ${rejected.length + persistFailures} assessment(s) excluded and ${repositoriesWithErrors} repository/repositories were not fully analyzed.`
-      : null,
-  });
-
-  return {
-    analysisId,
-    status: incomplete ? 'partial' : 'completed',
     skillsAssessed: persistedLevels.length,
     evidenceConsidered: input.citableEvidenceIds.size,
-    model: completion.model,
-    promptVersion: PROMPT_VERSION,
-    pipelineVersion: PIPELINE_VERSION,
+    partialMessage: incomplete
+      ? `Assessed ${persistedLevels.length} skill(s); ${rejected.length + persistFailures} assessment(s) excluded and ${repositoriesWithErrors} repository/repositories were not fully analyzed.`
+      : null,
     // Token usage is returned rather than logged: CLAUDE.md §17.13 wants
     // spend observed per task, and until Pino lands (§20.1 bans `console`
     // for business events) the caller is the only honest place to surface it.
