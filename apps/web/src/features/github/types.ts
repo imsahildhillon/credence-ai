@@ -114,3 +114,105 @@ export class GithubError extends Error {
 export type ImportResult =
   | { readonly status: 'success'; readonly imported: number }
   | { readonly status: 'error'; readonly kind: GithubErrorKind; readonly message: string };
+
+/**
+ * Raw, verifiable facts about a running analysis — every field is a direct
+ * count or existence check against rows the worker actually wrote, never an
+ * estimate or a fabricated percentage (CLAUDE.md §21.5: never fake progress).
+ */
+export interface AnalysisProgress {
+  readonly status: AnalysisRow['status'];
+  readonly startedAt: string | null;
+  readonly repositoryCount: number;
+  readonly hasRepositoryEvidence: boolean;
+  readonly hasCommitEvidence: boolean;
+  readonly hasExtractedEvidence: boolean;
+  readonly hasSkillAssessments: boolean;
+}
+
+export type PipelineStageId =
+  | 'queue_accepted'
+  | 'fetching_repositories'
+  | 'reading_commits'
+  | 'extracting_evidence'
+  | 'building_report'
+  | 'complete';
+
+export type PipelineStageState = 'pending' | 'active' | 'complete';
+
+export interface PipelineStage {
+  readonly id: PipelineStageId;
+  readonly label: string;
+  readonly state: PipelineStageState;
+}
+
+const STAGE_LABELS: Readonly<Record<PipelineStageId, string>> = {
+  queue_accepted: 'Queue accepted',
+  fetching_repositories: 'Fetching repositories',
+  reading_commits: 'Reading commits',
+  extracting_evidence: 'Extracting engineering evidence',
+  building_report: 'Building engineering report',
+  complete: 'Complete',
+};
+
+const STAGE_ORDER: readonly PipelineStageId[] = [
+  'queue_accepted',
+  'fetching_repositories',
+  'reading_commits',
+  'extracting_evidence',
+  'building_report',
+  'complete',
+];
+
+/**
+ * Turns raw progress facts into a stage list. Each stage's state is derived
+ * from something that actually happened — a row that exists, a status the
+ * worker wrote — never from elapsed time or a guess. The mapping is
+ * necessarily approximate at the boundary between two adjacent stages (e.g.
+ * "fetching repositories" is inferred to be running the moment before any
+ * repository evidence has landed, not because we observed a "fetch started"
+ * event — no such event is persisted today), but every "complete" claim is
+ * backed by a real, checkable fact, and nothing here ever renders a
+ * percentage.
+ */
+export function deriveAnalysisStages(progress: AnalysisProgress): readonly PipelineStage[] {
+  if (progress.status === 'failed') {
+    return STAGE_ORDER.map((id) => ({ id, label: STAGE_LABELS[id], state: 'pending' }));
+  }
+
+  if (progress.status === 'completed' || progress.status === 'partial') {
+    return STAGE_ORDER.map((id) => ({ id, label: STAGE_LABELS[id], state: 'complete' }));
+  }
+
+  if (progress.status === 'queued') {
+    return STAGE_ORDER.map((id, index) => ({
+      id,
+      label: STAGE_LABELS[id],
+      state: index === 0 ? 'active' : 'pending',
+    }));
+  }
+
+  // 'processing': each boolean is a fact about rows that exist right now.
+  const completedFlags: Readonly<Record<Exclude<PipelineStageId, 'complete'>, boolean>> = {
+    queue_accepted: true,
+    fetching_repositories: progress.hasRepositoryEvidence,
+    reading_commits: progress.hasCommitEvidence,
+    extracting_evidence: progress.hasExtractedEvidence,
+    building_report: progress.hasSkillAssessments,
+  };
+
+  let activeAssigned = false;
+  return STAGE_ORDER.map((id) => {
+    if (id === 'complete') {
+      return { id, label: STAGE_LABELS[id], state: 'pending' as const };
+    }
+    if (completedFlags[id]) {
+      return { id, label: STAGE_LABELS[id], state: 'complete' as const };
+    }
+    if (!activeAssigned) {
+      activeAssigned = true;
+      return { id, label: STAGE_LABELS[id], state: 'active' as const };
+    }
+    return { id, label: STAGE_LABELS[id], state: 'pending' as const };
+  });
+}

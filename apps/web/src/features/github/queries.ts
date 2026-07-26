@@ -5,12 +5,21 @@ import { createClient } from '@/lib/supabase/server';
 
 import { toAnalysisSnapshotItem, toRepositorySummary } from './repository-mapper';
 import type {
+  AnalysisProgress,
   AnalysisRow,
   AnalysisSnapshotItem,
   GithubAccountRow,
   RepositoryRef,
   RepositorySummary,
 } from './types';
+
+const EXTRACTED_EVIDENCE_SOURCE_TYPES = [
+  'pull_request',
+  'review',
+  'issue',
+  'release',
+  'contributor',
+] as const;
 
 /**
  * Read-side data access for the onboarding feature. Every query runs
@@ -86,6 +95,79 @@ export async function listAnalysisSnapshot(analysisId: string): Promise<Analysis
   return (data ?? []).map(toAnalysisSnapshotItem);
 }
 
+/**
+ * The real, checkable facts behind a running analysis — every field a
+ * direct row-existence check against what the worker has actually
+ * persisted so far, scoped to exactly the repositories this run's
+ * (immutable) snapshot covers. Nothing here is estimated or interpolated
+ * (CLAUDE.md §21.5: never fake progress, never an indeterminate spinner
+ * where stages are knowable).
+ */
+export async function getAnalysisProgress(analysis: AnalysisRow): Promise<AnalysisProgress> {
+  const supabase = await createClient();
+
+  const { data: snapshotRows, error: snapshotError } = await supabase
+    .from('analysis_repositories')
+    .select('repository_id')
+    .eq('analysis_id', analysis.id);
+  if (snapshotError) {
+    throw normalizeSupabaseError(snapshotError);
+  }
+  const repositoryIds = (snapshotRows ?? []).map((row) => row.repository_id);
+
+  if (repositoryIds.length === 0) {
+    return {
+      status: analysis.status,
+      startedAt: analysis.started_at,
+      repositoryCount: 0,
+      hasRepositoryEvidence: false,
+      hasCommitEvidence: false,
+      hasExtractedEvidence: false,
+      hasSkillAssessments: false,
+    };
+  }
+
+  const [repositoryEvidence, commitEvidence, extractedEvidence, skillAssessments] =
+    await Promise.all([
+      supabase
+        .from('evidence_items')
+        .select('id', { count: 'exact', head: true })
+        .in('repository_id', repositoryIds)
+        .eq('source_type', 'repository'),
+      supabase
+        .from('evidence_items')
+        .select('id', { count: 'exact', head: true })
+        .in('repository_id', repositoryIds)
+        .eq('source_type', 'commit'),
+      supabase
+        .from('evidence_items')
+        .select('id', { count: 'exact', head: true })
+        .in('repository_id', repositoryIds)
+        .in('source_type', [...EXTRACTED_EVIDENCE_SOURCE_TYPES]),
+      supabase
+        .from('skill_assessments')
+        .select('id', { count: 'exact', head: true })
+        .eq('profile_id', analysis.profile_id)
+        .eq('analysis_id', analysis.id),
+    ]);
+
+  for (const result of [repositoryEvidence, commitEvidence, extractedEvidence, skillAssessments]) {
+    if (result.error) {
+      throw normalizeSupabaseError(result.error);
+    }
+  }
+
+  return {
+    status: analysis.status,
+    startedAt: analysis.started_at,
+    repositoryCount: repositoryIds.length,
+    hasRepositoryEvidence: (repositoryEvidence.count ?? 0) > 0,
+    hasCommitEvidence: (commitEvidence.count ?? 0) > 0,
+    hasExtractedEvidence: (extractedEvidence.count ?? 0) > 0,
+    hasSkillAssessments: (skillAssessments.count ?? 0) > 0,
+  };
+}
+
 export async function getLatestAnalysis(profileId: string): Promise<AnalysisRow | null> {
   const supabase = await createClient();
   const { data, error } = await supabase
@@ -94,6 +176,20 @@ export async function getLatestAnalysis(profileId: string): Promise<AnalysisRow 
     .eq('profile_id', profileId)
     .order('created_at', { ascending: false })
     .limit(1)
+    .maybeSingle();
+  if (error) {
+    throw normalizeSupabaseError(error);
+  }
+  return data;
+}
+
+/** RLS (`analyses_select_own`) is the ownership boundary — a caller who doesn't own `analysisId` gets `null`, same as a not-found. */
+export async function getAnalysisById(analysisId: string): Promise<AnalysisRow | null> {
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from('analyses')
+    .select('*')
+    .eq('id', analysisId)
     .maybeSingle();
   if (error) {
     throw normalizeSupabaseError(error);
