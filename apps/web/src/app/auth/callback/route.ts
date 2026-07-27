@@ -10,6 +10,7 @@ import {
   describeProviderTokenAbsence,
   logOAuthCallbackOutcome,
 } from '@/features/github/account';
+import { logOAuthStep } from '@/features/github/diagnostics';
 import type { Database } from '@/lib/supabase/types';
 
 /**
@@ -36,6 +37,8 @@ import type { Database } from '@/lib/supabase/types';
  */
 export async function GET(request: NextRequest) {
   const correlationId = randomUUID();
+  // TEMPORARY — see features/github/diagnostics.ts.
+  logOAuthStep(correlationId, null, 'callback:entered');
   const { searchParams, origin } = new URL(request.url);
   const code = searchParams.get('code');
   const next = toSafeRedirectPath(searchParams.get('next'));
@@ -75,6 +78,7 @@ export async function GET(request: NextRequest) {
   );
 
   const { data, error } = await supabase.auth.exchangeCodeForSession(code);
+  logOAuthStep(correlationId, null, 'callback:after_exchange_code_for_session', error ?? undefined);
 
   if (error) {
     // The complete Supabase error, not a summary — this branch previously
@@ -110,6 +114,8 @@ export async function GET(request: NextRequest) {
     userId: data.user.id,
   });
 
+  logOAuthStep(correlationId, null, 'callback:before_capture_github_oauth_credentials');
+
   let captureResult;
   try {
     captureResult = await captureGithubOAuthCredentials(
@@ -117,6 +123,7 @@ export async function GET(request: NextRequest) {
       data.session.provider_token,
       describeProviderTokenAbsence(data.session),
       supabase,
+      correlationId,
     );
   } catch (error) {
     // `captureGithubOAuthCredentials` is designed to never throw (every

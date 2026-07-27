@@ -7,6 +7,7 @@ import { createClient } from '@/lib/supabase/server';
 import type { Database } from '@/lib/supabase/types';
 
 import { storeGithubAccessToken } from './credentials';
+import { logOAuthStep } from './diagnostics';
 import { getAuthenticatedGithubUser } from './service';
 import { GithubError, type GithubAccountRow } from './types';
 
@@ -247,19 +248,31 @@ export function logOAuthCallbackOutcome(
  * caller must always pass the client it authenticated via
  * `exchangeCodeForSession()`, never the ambient one. See `ensureGithubAccount`
  * for why the ambient client cannot see this session yet.
+ *
+ * `correlationId` is TEMPORARY plumbing (see `features/github/diagnostics.ts`)
+ * for tracing exactly how far a single reconnect gets before either
+ * completing or failing — not part of this function's permanent contract.
  */
 export async function captureGithubOAuthCredentials(
   user: User,
   providerToken: string | null | undefined,
   providerTokenAbsenceContext: ProviderTokenAbsenceContext,
   client: SupabaseClient<Database>,
+  correlationId: string,
 ): Promise<OAuthCallbackOutcome> {
+  // TEMPORARY — see features/github/diagnostics.ts. Traces whether
+  // storeGithubAccessToken() is reached at all, and if not, exactly which
+  // earlier step stopped execution.
+  logOAuthStep(correlationId, null, 'capture_credentials:entered');
+
   if (!providerToken) {
+    logOAuthStep(correlationId, null, 'capture_credentials:return_provider_token_missing');
     return { outcome: 'provider_token_missing', context: providerTokenAbsenceContext };
   }
 
   const fromSession = deriveGithubIdentity(user);
   if (!fromSession) {
+    logOAuthStep(correlationId, null, 'capture_credentials:return_github_identity_missing');
     return { outcome: 'github_identity_missing' };
   }
 
@@ -267,14 +280,19 @@ export async function captureGithubOAuthCredentials(
   try {
     account = await upsertGithubAccount(client, user.id, fromSession.id, fromSession.login);
   } catch (error) {
+    logOAuthStep(correlationId, null, 'capture_credentials:return_github_account_upsert_failed', error);
     return { outcome: 'github_account_upsert_failed', error };
   }
+  logOAuthStep(correlationId, account.id, 'capture_credentials:after_upsert_github_account');
 
+  logOAuthStep(correlationId, account.id, 'capture_credentials:before_store_github_access_token');
   try {
-    await storeGithubAccessToken(account.id, providerToken);
+    await storeGithubAccessToken(account.id, providerToken, undefined, correlationId);
   } catch (error) {
+    logOAuthStep(correlationId, account.id, 'capture_credentials:return_credential_upsert_failed', error);
     return { outcome: 'credential_upsert_failed', githubAccountId: account.id, error };
   }
 
+  logOAuthStep(correlationId, account.id, 'capture_credentials:return_credential_persisted');
   return { outcome: 'credential_persisted', githubAccountId: account.id };
 }

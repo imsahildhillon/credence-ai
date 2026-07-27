@@ -4,6 +4,8 @@ import { decryptSecret, encryptSecret } from '@/lib/crypto/secret-cipher';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { normalizeSupabaseError } from '@/lib/supabase/errors';
 
+import { logOAuthStep } from './diagnostics';
+
 /**
  * Durable storage for GitHub OAuth access tokens.
  *
@@ -23,43 +25,47 @@ export async function storeGithubAccessToken(
   githubAccountId: string,
   accessToken: string,
   scopes?: string | null,
+  correlationId?: string,
 ): Promise<void> {
-  // TEMPORARY DIAGNOSTICS — never logs the token itself, only its presence
-  // (CLAUDE.md §18.5, §20.4). There is no early-return branch in this
-  // function today (every call reaches the upsert below); this log exists so
-  // that fact is verifiable from production logs rather than assumed from
-  // reading the source.
-  console.warn('[storeGithubAccessToken] entered', {
-    githubAccountId,
-    hasAccessToken: Boolean(accessToken),
-  });
+  // TEMPORARY — see features/github/diagnostics.ts. Every step below logs,
+  // including both possible throw points and the success return, so the
+  // next reconnect settles with certainty whether this function was ever
+  // entered, and if it was, exactly which step it stopped at.
+  logOAuthStep(correlationId, githubAccountId, 'store_credential:entered');
+
+  let encrypted: string;
+  try {
+    encrypted = encryptSecret(accessToken);
+  } catch (error) {
+    logOAuthStep(correlationId, githubAccountId, 'store_credential:encrypt_failed', error);
+    throw error;
+  }
+  logOAuthStep(correlationId, githubAccountId, 'store_credential:encrypt_succeeded');
 
   const admin = createAdminClient();
-  const { data, error } = await admin
+
+  logOAuthStep(correlationId, githubAccountId, 'store_credential:before_upsert');
+  const { error } = await admin
     .from('github_credentials')
     .upsert(
       {
         github_account_id: githubAccountId,
-        access_token_encrypted: encryptSecret(accessToken),
+        access_token_encrypted: encrypted,
         token_scopes: scopes ?? null,
         captured_at: new Date().toISOString(),
         // A freshly captured token means authorization is valid again.
         revoked_at: null,
       },
       { onConflict: 'github_account_id' },
-    )
-    .select('id, github_account_id, captured_at, revoked_at');
-
-  // TEMPORARY DIAGNOSTICS — the exact upsert result, before any throw.
-  console.warn('[storeGithubAccessToken] upsert result', {
-    githubAccountId,
-    data,
-    error,
-  });
+    );
+  logOAuthStep(correlationId, githubAccountId, 'store_credential:after_upsert', error ?? undefined);
 
   if (error) {
+    logOAuthStep(correlationId, githubAccountId, 'store_credential:throw_upsert_error', error);
     throw normalizeSupabaseError(error);
   }
+
+  logOAuthStep(correlationId, githubAccountId, 'store_credential:return_success');
 }
 
 /** Returns the decrypted token, or null when absent or known-revoked. */
