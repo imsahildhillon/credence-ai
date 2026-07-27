@@ -1,6 +1,6 @@
 import 'server-only';
 
-import type { SupabaseClient, User } from '@supabase/supabase-js';
+import type { Session, SupabaseClient, User } from '@supabase/supabase-js';
 
 import { normalizeSupabaseError } from '@/lib/supabase/errors';
 import { createClient } from '@/lib/supabase/server';
@@ -114,26 +114,133 @@ export async function ensureGithubAccount(
 }
 
 /**
- * What happened when the OAuth callback tried to capture and persist the
- * GitHub token this sign-in produced. A real discriminated result, not a
- * swallowed `void` — the previous version of this function silently
- * returned on a missing `provider_token` and let any persistence error
- * disappear into the callback's catch-all, which is exactly what made two
- * independent students' missing `github_credentials` rows undiagnosable
- * from logs alone.
+ * Every terminal state a GitHub OAuth callback request can reach, covering
+ * both the token exchange (`exchange_failed`, constructed by the route
+ * itself before this module is ever called) and credential capture (the
+ * other five, returned by `captureGithubOAuthCredentials`). Deliberately one
+ * flat union rather than nested results — a caller can `switch` over exactly
+ * six cases and knows, by the type, that there is no seventh silent path.
  */
-export type CredentialCaptureOutcome =
-  | { readonly outcome: 'captured' }
-  | { readonly outcome: 'no_provider_token' }
-  | { readonly outcome: 'persist_failed'; readonly error: unknown };
+export type OAuthCallbackOutcome =
+  | { readonly outcome: 'exchange_failed'; readonly error: unknown }
+  | { readonly outcome: 'provider_token_missing'; readonly context: ProviderTokenAbsenceContext }
+  | { readonly outcome: 'github_identity_missing' }
+  | { readonly outcome: 'github_account_upsert_failed'; readonly error: unknown }
+  | { readonly outcome: 'credential_upsert_failed'; readonly githubAccountId: string; readonly error: unknown }
+  | { readonly outcome: 'credential_persisted'; readonly githubAccountId: string };
+
+/**
+ * What the session tells us about *why* `provider_token` might be absent —
+ * built from fields Supabase actually returns, not a guess. Supabase itself
+ * doesn't supply a "reason" for a missing provider token, so this reports
+ * the facts a reader can use to judge the likely cause: whether a
+ * `provider_refresh_token` came back either (both missing points at GitHub
+ * simply not reissuing one this exchange, vs. one present without the
+ * other), whether this looks like a first-ever sign-in or a returning
+ * session, and how many identities are linked.
+ */
+export interface ProviderTokenAbsenceContext {
+  readonly hasProviderRefreshToken: boolean;
+  readonly isReturningIdentity: boolean;
+  readonly identityCount: number;
+  readonly tokenType: string | null;
+}
+
+export function describeProviderTokenAbsence(session: Session): ProviderTokenAbsenceContext {
+  return {
+    hasProviderRefreshToken: Boolean(session.provider_refresh_token),
+    isReturningIdentity: session.user.created_at !== session.user.last_sign_in_at,
+    identityCount: session.user.identities?.length ?? 0,
+    tokenType: session.token_type ?? null,
+  };
+}
+
+/** Independent copy of the same error-description walk used elsewhere (`lib/supabase/errors.ts`, `features/pipeline/diagnostics.ts`, `features/analysis/service.ts`) — this feature imports none of them (CLAUDE.md §4). */
+function describeErrorForLog(error: unknown, seen: Set<unknown> = new Set()): unknown {
+  if (error === null || typeof error !== 'object') {
+    return error;
+  }
+  if (seen.has(error)) {
+    return '[circular]';
+  }
+  seen.add(error);
+
+  const record = error as Record<string, unknown>;
+  const description: Record<string, unknown> = {};
+
+  if (error instanceof Error) {
+    description['name'] = error.name;
+    description['message'] = error.message;
+    description['stack'] = error.stack;
+  }
+  for (const key of ['status', 'statusCode', 'code', 'details', 'hint']) {
+    if (record[key] !== undefined) {
+      description[key] = record[key];
+    }
+  }
+  if (record['cause'] !== undefined) {
+    description['cause'] = describeErrorForLog(record['cause'], seen);
+  }
+
+  return description;
+}
+
+/**
+ * The single place every OAuth callback request logs its terminal outcome —
+ * exactly one of the six `OAuthCallbackOutcome` variants, exactly once. The
+ * route calls this either immediately after an `exchange_failed` (then
+ * returns) or once after `captureGithubOAuthCredentials` resolves; those two
+ * call sites are mutually exclusive by construction (the first `return`s
+ * before the second can run), so no request can ever log twice or not at all.
+ */
+export function logOAuthCallbackOutcome(
+  correlationId: string,
+  userId: string,
+  outcome: OAuthCallbackOutcome,
+): void {
+  const base = { correlationId, userId, outcome: outcome.outcome };
+  switch (outcome.outcome) {
+    case 'credential_persisted':
+      console.warn('[auth-callback] outcome', { ...base, githubAccountId: outcome.githubAccountId });
+      return;
+    case 'provider_token_missing':
+      console.warn('[auth-callback] outcome', { ...base, context: outcome.context });
+      return;
+    case 'github_identity_missing':
+      console.error('[auth-callback] outcome', base);
+      return;
+    case 'exchange_failed':
+    case 'github_account_upsert_failed':
+      console.error('[auth-callback] outcome', { ...base, error: describeErrorForLog(outcome.error) });
+      return;
+    case 'credential_upsert_failed':
+      console.error('[auth-callback] outcome', {
+        ...base,
+        githubAccountId: outcome.githubAccountId,
+        error: describeErrorForLog(outcome.error),
+      });
+      return;
+    default: {
+      const exhaustive: never = outcome;
+      throw new Error(`Unhandled OAuth callback outcome: ${JSON.stringify(exhaustive)}`);
+    }
+  }
+}
 
 /**
  * Captures the GitHub OAuth token issued at sign-in and persists it
  * (encrypted) so repository access survives beyond the Supabase session —
- * the durability fix (ADR-004). Called from the OAuth callback: never throws
- * (a failure here must never break login), but now reports exactly which of
- * the three possible outcomes occurred so the caller can log accordingly
- * instead of guessing after the fact.
+ * the durability fix (ADR-004). Called from the OAuth callback only.
+ *
+ * Deliberately bypasses `ensureGithubAccount` (unlike the old version) and
+ * calls `upsertGithubAccount` directly: the two failure modes inside
+ * `ensureGithubAccount`'s `useApi: false` branch (missing session identity vs.
+ * a failed account upsert) need to be distinguishable outcomes here, not
+ * collapsed into one caught exception. Because the same `account.id` this
+ * function gets back from the account upsert is the *only* id ever passed to
+ * `storeGithubAccessToken`, the two tables' `github_account_id` cannot
+ * diverge within one call — there is no second id in scope to compare
+ * against.
  *
  * `client` is required (not optional, unlike `ensureGithubAccount`'s) because
  * this function has exactly one caller — the OAuth callback — and that
@@ -144,16 +251,30 @@ export type CredentialCaptureOutcome =
 export async function captureGithubOAuthCredentials(
   user: User,
   providerToken: string | null | undefined,
+  providerTokenAbsenceContext: ProviderTokenAbsenceContext,
   client: SupabaseClient<Database>,
-): Promise<CredentialCaptureOutcome> {
+): Promise<OAuthCallbackOutcome> {
   if (!providerToken) {
-    return { outcome: 'no_provider_token' };
+    return { outcome: 'provider_token_missing', context: providerTokenAbsenceContext };
   }
+
+  const fromSession = deriveGithubIdentity(user);
+  if (!fromSession) {
+    return { outcome: 'github_identity_missing' };
+  }
+
+  let account: GithubAccountRow;
   try {
-    const account = await ensureGithubAccount(user, { useApi: false, client });
-    await storeGithubAccessToken(account.id, providerToken);
-    return { outcome: 'captured' };
+    account = await upsertGithubAccount(client, user.id, fromSession.id, fromSession.login);
   } catch (error) {
-    return { outcome: 'persist_failed', error };
+    return { outcome: 'github_account_upsert_failed', error };
   }
+
+  try {
+    await storeGithubAccessToken(account.id, providerToken);
+  } catch (error) {
+    return { outcome: 'credential_upsert_failed', githubAccountId: account.id, error };
+  }
+
+  return { outcome: 'credential_persisted', githubAccountId: account.id };
 }

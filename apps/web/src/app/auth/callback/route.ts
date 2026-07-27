@@ -1,9 +1,15 @@
+import { randomUUID } from 'node:crypto';
+
 import { createServerClient } from '@supabase/ssr';
 import { NextResponse, type NextRequest } from 'next/server';
 
 import { publicEnv } from '@/config/public-env';
 import { getOrCreateProfile, toSafeRedirectPath } from '@/features/auth/server/service';
-import { captureGithubOAuthCredentials } from '@/features/github/account';
+import {
+  captureGithubOAuthCredentials,
+  describeProviderTokenAbsence,
+  logOAuthCallbackOutcome,
+} from '@/features/github/account';
 import type { Database } from '@/lib/supabase/types';
 
 /**
@@ -21,105 +27,117 @@ import type { Database } from '@/lib/supabase/types';
  *     encrypted (ADR-004). This is the *only* moment the provider token is
  *     available; without capturing it here, repository access would die with
  *     the session.
+ *
+ * Every request logs exactly one terminal outcome via
+ * `logOAuthCallbackOutcome` (`features/github/account.ts`), tagged with a
+ * per-request `correlationId` so one request's whole story — exchange,
+ * profile bootstrap, credential capture — can be reconstructed from logs
+ * alone. No `catch` in this file is empty; every one produces a log line.
  */
 export async function GET(request: NextRequest) {
+  const correlationId = randomUUID();
   const { searchParams, origin } = new URL(request.url);
   const code = searchParams.get('code');
   const next = toSafeRedirectPath(searchParams.get('next'));
 
-  if (code) {
-    // Bound to the exact response we return, rather than the ambient
-    // `next/headers` cookie jar (`lib/supabase/server.ts`'s `createClient`).
-    // That jar's `setAll` silently swallows write failures — correct for
-    // ordinary Server Component reads, which can't write cookies at all,
-    // but this route's entire job is to persist a brand-new session cookie
-    // onto a redirect it constructs itself. Writing straight to `response`
-    // guarantees the Set-Cookie headers travel with it regardless of
-    // which context Next.js considers "current" when `setAll` runs — this
-    // is the root cause of the production-only "authenticated redirected
-    // to /login" bug: the cookie write was silently lost after this
-    // redirect, not lost before it.
-    const response = NextResponse.redirect(`${origin}${next}`);
-    const supabase = createServerClient<Database>(
-      publicEnv.NEXT_PUBLIC_SUPABASE_URL,
-      publicEnv.NEXT_PUBLIC_SUPABASE_ANON_KEY,
-      {
-        cookies: {
-          getAll() {
-            return request.cookies.getAll();
-          },
-          setAll(cookiesToSet) {
-            cookiesToSet.forEach(({ name, value, options }) =>
-              response.cookies.set(name, value, options),
-            );
-          },
+  if (!code) {
+    console.warn('[auth-callback] missing_code', { correlationId });
+    return NextResponse.redirect(`${origin}/login?error=oauth_missing_code`);
+  }
+
+  // Bound to the exact response we return, rather than the ambient
+  // `next/headers` cookie jar (`lib/supabase/server.ts`'s `createClient`).
+  // That jar's `setAll` silently swallows write failures — correct for
+  // ordinary Server Component reads, which can't write cookies at all,
+  // but this route's entire job is to persist a brand-new session cookie
+  // onto a redirect it constructs itself. Writing straight to `response`
+  // guarantees the Set-Cookie headers travel with it regardless of
+  // which context Next.js considers "current" when `setAll` runs — this
+  // is the root cause of the production-only "authenticated redirected
+  // to /login" bug: the cookie write was silently lost after this
+  // redirect, not lost before it.
+  const response = NextResponse.redirect(`${origin}${next}`);
+  const supabase = createServerClient<Database>(
+    publicEnv.NEXT_PUBLIC_SUPABASE_URL,
+    publicEnv.NEXT_PUBLIC_SUPABASE_ANON_KEY,
+    {
+      cookies: {
+        getAll() {
+          return request.cookies.getAll();
+        },
+        setAll(cookiesToSet) {
+          cookiesToSet.forEach(({ name, value, options }) =>
+            response.cookies.set(name, value, options),
+          );
         },
       },
-    );
+    },
+  );
 
-    const { data, error } = await supabase.auth.exchangeCodeForSession(code);
+  const { data, error } = await supabase.auth.exchangeCodeForSession(code);
 
-    if (!error) {
-      try {
-        await getOrCreateProfile(data.user);
-      } catch {
-        // Profile bootstrap failing here is a degraded-but-recoverable
-        // state (CLAUDE.md §19.5) — the (app) layout retries the same
-        // self-healing read on every protected page render, so a
-        // transient failure at this exact moment doesn't strand the user;
-        // it just means one extra render before the profile appears.
-      }
-
-      try {
-        const captureResult = await captureGithubOAuthCredentials(
-          data.user,
-          data.session.provider_token,
-          supabase,
-        );
-        switch (captureResult.outcome) {
-          case 'captured':
-            break; // Happy path — no noise needed.
-          case 'no_provider_token':
-            // Expected some of the time (GitHub/Supabase doesn't guarantee a
-            // fresh provider_token on every exchange) — resolveGithubAccess's
-            // opportunistic persist (features/github/service.ts) is the
-            // designed self-heal for this case, not an error on its own.
-            // Logged as a fact, not a failure, so a real pattern is still
-            // visible without being alarmed on every occurrence.
-            console.warn('[auth] github sign-in produced no provider_token to capture', {
-              userId: data.user.id,
-            });
-            break;
-          case 'persist_failed':
-            // Never silent — this is exactly the gap that made two students'
-            // missing github_credentials rows undiagnosable from logs alone.
-            console.error(
-              '[auth] failed to persist github credential',
-              JSON.stringify({
-                userId: data.user.id,
-                error:
-                  captureResult.error instanceof Error
-                    ? { name: captureResult.error.name, message: captureResult.error.message }
-                    : captureResult.error,
-              }),
-            );
-            break;
-        }
-      } catch (error) {
-        // Never break sign-in over credential capture — but never silent
-        // either. If this fires, it's a bug in captureGithubOAuthCredentials
-        // itself (it's designed to never throw); still degrade gracefully.
-        console.error(
-          '[auth] unexpected error capturing github credential:',
-          error instanceof Error ? error.message : error,
-        );
-      }
-
-      return response;
-    }
-
+  if (error) {
+    // The complete Supabase error, not a summary — this branch previously
+    // had no log statement at all, which is why every credential-capture log
+    // downstream of it could be deployed correctly and still never fire: a
+    // request that exits here never reaches any of them.
+    logOAuthCallbackOutcome(correlationId, 'unknown', {
+      outcome: 'exchange_failed',
+      error: { name: error.name, message: error.message, status: error.status, code: error.code },
+    });
     return NextResponse.redirect(`${origin}/login?error=oauth_callback_failed`);
   }
 
-  return NextResponse.redirect(`${origin}/login?error=oauth_missing_code`);
+  try {
+    await getOrCreateProfile(data.user);
+  } catch (profileError) {
+    // Degraded-but-recoverable (CLAUDE.md §19.5) — the (app) layout retries
+    // this same self-healing read on every protected page render. Still
+    // logged: this used to be an empty `catch {}`, the same silent-failure
+    // shape as the credential-capture gap this file exists to close.
+    console.warn('[auth-callback] profile_bootstrap_failed', {
+      correlationId,
+      userId: data.user.id,
+      error:
+        profileError instanceof Error
+          ? { name: profileError.name, message: profileError.message }
+          : profileError,
+    });
+  }
+
+  console.warn('[auth-callback] capture_credentials_start', {
+    correlationId,
+    userId: data.user.id,
+  });
+
+  let captureResult;
+  try {
+    captureResult = await captureGithubOAuthCredentials(
+      data.user,
+      data.session.provider_token,
+      describeProviderTokenAbsence(data.session),
+      supabase,
+    );
+  } catch (error) {
+    // `captureGithubOAuthCredentials` is designed to never throw (every
+    // internal failure is returned as an outcome, not thrown) — this is a
+    // safety net for a genuine bug in that function, not an expected path.
+    // Sign-in must not break over it, but it must never be silent either.
+    console.error('[auth-callback] capture_credentials_threw', {
+      correlationId,
+      userId: data.user.id,
+      error: error instanceof Error ? { name: error.name, message: error.message } : error,
+    });
+    return response;
+  }
+
+  console.warn('[auth-callback] capture_credentials_end', {
+    correlationId,
+    userId: data.user.id,
+    outcome: captureResult.outcome,
+  });
+
+  logOAuthCallbackOutcome(correlationId, data.user.id, captureResult);
+
+  return response;
 }
