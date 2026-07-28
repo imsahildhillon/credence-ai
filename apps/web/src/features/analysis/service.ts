@@ -106,6 +106,16 @@ function describeErrorForLog(error: unknown, seen: Set<unknown> = new Set()): un
 }
 
 /**
+ * TEMPORARY — traces every major step of the assessment stage so the first
+ * operation that fails after ingestion completes can be identified with
+ * certainty, the same way `[oauth-trace]` did for the OAuth callback. Remove
+ * this and every call site once the failing operation is confirmed.
+ */
+function logAssessStep(analysisId: string, step: string): void {
+  console.warn('[assess-trace]', { analysisId, step });
+}
+
+/**
  * Logs the complete original exception that terminated an analysis. Called
  * from `failRun` — the single function every failure branch in
  * `runSkillAssessment` returns through — rather than from individual `catch`
@@ -182,7 +192,9 @@ export async function runSkillAssessment(
   analysisId: string,
   checkpoint: () => Promise<'continue' | 'stop'>,
 ): Promise<AssessmentResult> {
+  logAssessStep(analysisId, 'get_analysis_context:before');
   const analysis = await getAnalysisContext(analysisId);
+  logAssessStep(analysisId, 'get_analysis_context:after');
 
   if (!analysis) {
     throw new Error(`Analysis ${analysisId} not found`);
@@ -193,10 +205,15 @@ export async function runSkillAssessment(
     throw new Error(`Analysis ${analysisId} has not completed evidence ingestion`);
   }
 
+  logAssessStep(analysisId, 'list_snapshot_repositories:before');
   const repositories = await listSnapshotRepositories(analysisId);
+  logAssessStep(analysisId, 'list_snapshot_repositories:after');
+
+  logAssessStep(analysisId, 'list_evidence_for_repositories:before');
   const evidence = await listEvidenceForRepositories(
     repositories.map((repository) => repository.repositoryId),
   );
+  logAssessStep(analysisId, 'list_evidence_for_repositories:after');
 
   if (evidence.length === 0) {
     return failRun(
@@ -208,12 +225,15 @@ export async function runSkillAssessment(
     );
   }
 
+  logAssessStep(analysisId, 'load_skills_and_context:before');
   const [skills, candidateLogin, repositoriesWithErrors] = await Promise.all([
     listSkills(),
     getCandidateGithubLogin(analysis.profile_id),
     countRepositoriesWithErrors(analysisId),
   ]);
+  logAssessStep(analysisId, 'load_skills_and_context:after');
 
+  logAssessStep(analysisId, 'aggregate_evidence:before');
   const input = aggregateEvidence({
     evidence,
     repositories,
@@ -221,6 +241,7 @@ export async function runSkillAssessment(
     candidateLogin,
     repositoriesWithErrors,
   });
+  logAssessStep(analysisId, 'aggregate_evidence:after');
 
   if (input.skills.length === 0) {
     return failRun(
@@ -232,18 +253,23 @@ export async function runSkillAssessment(
     );
   }
 
+  logAssessStep(analysisId, 'checkpoint:before');
   if ((await checkpoint()) === 'stop') {
+    logAssessStep(analysisId, 'checkpoint:stopped');
     return { outcome: 'cancelled' };
   }
+  logAssessStep(analysisId, 'checkpoint:continue');
 
   let completion;
   try {
+    logAssessStep(analysisId, 'complete_structured:before');
     completion = await completeStructured({
       task: 'skillAssessment',
       systemPrompt: SKILL_ASSESSMENT_SYSTEM_PROMPT,
       userContent: buildAssessmentUserContent(input),
       schema: buildAssessmentOutputSchema(input.skills.map((skill) => skill.slug)),
     });
+    logAssessStep(analysisId, 'complete_structured:after');
   } catch (error) {
     // Evidence is untouched and remains available for a later attempt.
     return failRun(
@@ -256,7 +282,9 @@ export async function runSkillAssessment(
     );
   }
 
+  logAssessStep(analysisId, 'map_assessments:before');
   const { assessments, rejected } = mapAssessments(completion.output, input.citableEvidenceIds);
+  logAssessStep(analysisId, 'map_assessments:after');
 
   for (const rejection of rejected) {
     // Hallucinated or duplicated citations are a product-integrity event, not
@@ -283,6 +311,7 @@ export async function runSkillAssessment(
   let persistFailures = 0;
   let lastPersistError: unknown;
 
+  logAssessStep(analysisId, 'persist_assessments:before');
   for (const assessment of assessments) {
     try {
       await persistAssessment(analysisId, assessment);
@@ -300,6 +329,8 @@ export async function runSkillAssessment(
       ).catch(() => undefined);
     }
   }
+
+  logAssessStep(analysisId, 'persist_assessments:after');
 
   if (persistedLevels.length === 0) {
     return failRun(

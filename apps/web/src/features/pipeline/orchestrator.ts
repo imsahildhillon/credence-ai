@@ -83,11 +83,22 @@ export async function runAnalysisLifecycle(
     return { analysisId, outcome: 'cancelled' };
   }
 
+  // TEMPORARY — see features/analysis/service.ts's `logAssessStep` for the
+  // matching per-operation trace inside runSkillAssessment itself. This pair
+  // brackets the whole assessment stage from the orchestrator's side.
+  console.warn('[assess-trace]', { analysisId, step: 'orchestrator:transition_to_assessing:before' });
   await transitionStatus(analysisId, 'assessing');
+  console.warn('[assess-trace]', { analysisId, step: 'orchestrator:transition_to_assessing:after' });
   await recordEvent(analysisId, 'assessment_started');
   let assessment;
   try {
+    console.warn('[assess-trace]', { analysisId, step: 'orchestrator:run_skill_assessment:before' });
     assessment = await runSkillAssessment(analysisId, checkpoint);
+    console.warn('[assess-trace]', {
+      analysisId,
+      step: 'orchestrator:run_skill_assessment:after',
+      outcome: assessment.outcome,
+    });
   } catch (error) {
     logStageFailure('assess', analysisId, 'assessing', error);
     throw error;
