@@ -37,7 +37,7 @@ import { ENGINEERING_DIMENSIONS } from './types';
  */
 
 /** Evidence sample per dimension. Bounded so the prompt stays within budget. */
-const MAX_EVIDENCE_PER_DIMENSION = 40;
+const MAX_EVIDENCE_PER_DIMENSION = 10;
 const MAX_PRIMARY_LANGUAGES = 8;
 const MILLISECONDS_PER_DAY = 86_400_000;
 

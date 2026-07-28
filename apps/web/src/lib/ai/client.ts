@@ -106,6 +106,24 @@ export async function completeStructured<Schema extends z.ZodType>(
   options: StructuredCallOptions<Schema>,
 ): Promise<StructuredCompletion<z.infer<Schema>>> {
   const task = AI_TASKS[options.task];
+  const schemaForRequest = toResponseSchema(options.schema);
+
+  // TEMPORARY — request-size logging while the 4000-token GitHub Models
+  // limit is being tuned against (see MAX_EVIDENCE_PER_DIMENSION). Character
+  // counts, not a real tokenizer — a rough proxy (~4 chars/token for English
+  // text) to compare component sizes against each other and against the
+  // limit, not an exact token count. Remove once the size is settled.
+  const schemaChars = JSON.stringify(schemaForRequest).length;
+  const systemPromptChars = options.systemPrompt.length;
+  const userContentChars = options.userContent.length;
+  console.warn('[ai-request-size]', {
+    task: options.task,
+    systemPromptChars,
+    userContentChars,
+    schemaChars,
+    totalChars: systemPromptChars + userContentChars + schemaChars,
+    approxTokens: Math.ceil((systemPromptChars + userContentChars + schemaChars) / 4),
+  });
 
   let response;
   try {
@@ -116,7 +134,7 @@ export async function completeStructured<Schema extends z.ZodType>(
         type: 'json_schema',
         json_schema: {
           name: options.task,
-          schema: toResponseSchema(options.schema),
+          schema: schemaForRequest,
           strict: true,
         },
       },
