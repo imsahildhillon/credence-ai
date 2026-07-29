@@ -1,0 +1,810 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Credence AI - Developer Intelligence Report</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com" rel="preconnect"/>
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css2?family=Geist:wght@300;400;500;600;700&amp;family=JetBrains+Mono:wght@300;400;500&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+  tailwind.config = {
+    darkMode: "class",
+    theme: {
+      extend: {
+        "colors": {
+                "surface-dim": "#13131a",
+                "on-secondary": "#002e69",
+                "surface": "#13131a",
+                "error": "#ffb4ab",
+                "surface-container-low": "#1b1b23",
+                "primary-fixed": "#e2dfff",
+                "on-primary-fixed": "#0c006a",
+                "surface-container": "#1f1f27",
+                "on-secondary-fixed": "#001a41",
+                "surface-container-highest": "#35343c",
+                "on-tertiary-container": "#ffe1cf",
+                "outline": "#918f9f",
+                "on-background": "#e4e1ec",
+                "on-primary-fixed-variant": "#3631b4",
+                "tertiary-fixed": "#ffdcc6",
+                "tertiary-fixed-dim": "#ffb785",
+                "tertiary": "#ffb785",
+                "on-primary": "#1c0b9f",
+                "on-error": "#690005",
+                "inverse-primary": "#4f4ccd",
+                "secondary-container": "#4b8eff",
+                "outline-variant": "#464554",
+                "surface-variant": "#35343c",
+                "tertiary-container": "#a25100",
+                "on-secondary-fixed-variant": "#004493",
+                "surface-tint": "#c2c1ff",
+                "on-tertiary-fixed-variant": "#713700",
+                "primary-fixed-dim": "#c2c1ff",
+                "on-surface-variant": "#c7c4d6",
+                "on-tertiary-fixed": "#301400",
+                "on-secondary-container": "#00285c",
+                "surface-bright": "#393841",
+                "surface-container-lowest": "#0e0d15",
+                "surface-container-high": "#2a2931",
+                "primary": "#5856d6",
+                "secondary": "#adc6ff",
+                "on-surface": "#e4e1ec",
+                "background": "#13131a",
+                "on-primary-container": "#e7e4ff",
+                "on-error-container": "#ffdad6",
+                "error-container": "#93000a",
+                "secondary-fixed-dim": "#adc6ff",
+                "secondary-fixed": "#d8e2ff",
+                "inverse-surface": "#e4e1ec",
+                "inverse-on-surface": "#302f38",
+                "primary-container": "#5856d6",
+                "on-tertiary": "#502500"
+        },
+        "borderRadius": {
+                "DEFAULT": "0.125rem",
+                "lg": "0.25rem",
+                "xl": "0.5rem",
+                "full": "0.75rem"
+        },
+        "spacing": {
+                "gutter": "24px",
+                "margin-mobile": "16px",
+                "container-max": "1440px",
+                "margin-desktop": "40px",
+                "unit": "4px"
+        },
+        "fontFamily": {
+                "display-xl": [
+                        "Geist"
+                ],
+                "body-md": [
+                        "Geist"
+                ],
+                "label-sm": [
+                        "JetBrains Mono"
+                ],
+                "headline-lg-mobile": [
+                        "Geist"
+                ],
+                "headline-lg": [
+                        "Geist"
+                ],
+                "code-md": [
+                        "JetBrains Mono"
+                ]
+        },
+        "fontSize": {
+                "display-xl": [
+                        "64px",
+                        {
+                                "lineHeight": "72px",
+                                "letterSpacing": "-0.04em",
+                                "fontWeight": "700"
+                        }
+                ],
+                "body-md": [
+                        "16px",
+                        {
+                                "lineHeight": "24px",
+                                "fontWeight": "400"
+                        }
+                ],
+                "label-sm": [
+                        "13px",
+                        {
+                                "lineHeight": "16px",
+                                "fontWeight": "500"
+                        }
+                ],
+                "headline-lg-mobile": [
+                        "24px",
+                        {
+                                "lineHeight": "32px",
+                                "fontWeight": "600"
+                        }
+                ],
+                "headline-lg": [
+                        "32px",
+                        {
+                                "lineHeight": "40px",
+                                "letterSpacing": "-0.02em",
+                                "fontWeight": "600"
+                        }
+                ],
+                "code-md": [
+                        "14px",
+                        {
+                                "lineHeight": "20px",
+                                "fontWeight": "400"
+                        }
+                ]
+        }
+},
+    },
+  }
+</script>
+<style>
+        body {
+            background-color: #0e0d15;
+            color: #e4e1ec;
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+        }
+        
+        .page-section {
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            position: relative;
+            padding: 16rem 4rem; /* Massive whitespace */
+        }
+
+        .fade-in-up {
+            opacity: 0;
+            transform: translateY(20px);
+            transition: opacity 1.5s cubic-bezier(0.16, 1, 0.3, 1), transform 1.5s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+
+        .fade-in-up.visible {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        .evidence-block {
+            border-left: 2px solid rgba(88, 86, 214, 0.2);
+            padding-left: 1.5rem;
+            margin-bottom: 2rem;
+            position: relative;
+        }
+        
+        .why-btn {
+            position: absolute;
+            right: 0;
+            top: 0;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.75rem;
+            color: #5856d6;
+            background: rgba(88, 86, 214, 0.1);
+            padding: 0.25rem 0.75rem;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: all 0.2s;
+            opacity: 0;
+        }
+        
+        .evidence-block:hover .why-btn {
+            opacity: 1;
+        }
+
+        .why-btn:hover {
+            background: rgba(88, 86, 214, 0.2);
+        }
+
+        .why-panel {
+            display: none;
+            margin-top: 1rem;
+            padding: 1rem;
+            background: rgba(255,255,255,0.02);
+            border: 1px solid rgba(255,255,255,0.05);
+            font-family: 'Geist', sans-serif;
+            font-size: 0.875rem;
+            color: rgba(228, 225, 236, 0.8);
+        }
+
+        .why-panel.active {
+            display: block;
+            animation: fadeIn 0.3s ease;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(-5px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .evidence-label {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.75rem;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            color: #5856d6;
+            margin-bottom: 0.5rem;
+            display: block;
+            cursor: pointer;
+            transition: color 0.2s;
+        }
+        
+        .evidence-label:hover {
+            color: #7a78e6;
+        }
+        
+        .genome-canvas {
+            position: relative;
+            height: 400px;
+            width: 100%;
+        }
+
+        .genome-node {
+            position: absolute;
+            width: 12px;
+            height: 12px;
+            background-color: #5856d6;
+            border-radius: 50%;
+            transform: translate(-50%, -50%);
+            cursor: crosshair;
+            transition: all 0.4s ease;
+            box-shadow: 0 0 12px rgba(88, 86, 214, 0.3);
+            z-index: 20;
+        }
+
+        .genome-connection {
+            position: absolute;
+            background-color: rgba(88, 86, 214, 0.15);
+            transform-origin: 0 50%;
+            height: 1px;
+            z-index: 10;
+            transition: all 0.4s ease;
+        }
+
+        .genome-tooltip {
+            position: absolute;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.3s ease;
+            z-index: 30;
+            background: rgba(14, 13, 21, 0.95);
+            backdrop-filter: blur(8px);
+            border: 1px solid rgba(255,255,255,0.1);
+            padding: 1rem;
+            border-radius: 4px;
+            width: 280px;
+        }
+
+        .genome-node:hover {
+            box-shadow: 0 0 24px rgba(88, 86, 214, 0.8);
+            transform: translate(-50%, -50%) scale(1.5);
+        }
+
+        .genome-node:hover + .genome-tooltip {
+            opacity: 1;
+        }
+        
+        .evidence-wall-item {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.7rem;
+            color: rgba(228, 225, 236, 0.4);
+            line-height: 1.2;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .constellation-container {
+            width: 100%;
+            height: 60vh;
+            background: rgba(255,255,255,0.02);
+            border: 1px solid rgba(255,255,255,0.05);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        /* Side Drawer */
+        #evidence-drawer {
+            position: fixed;
+            top: 0;
+            right: -400px;
+            width: 400px;
+            height: 100vh;
+            background: #13131a;
+            border-left: 1px solid rgba(255,255,255,0.1);
+            z-index: 100;
+            transition: right 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+            padding: 2rem;
+            overflow-y: auto;
+            box-shadow: -10px 0 30px rgba(0,0,0,0.5);
+        }
+        
+        #evidence-drawer.open {
+            right: 0;
+        }
+        
+        .drawer-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            background: rgba(0,0,0,0.5);
+            backdrop-filter: blur(2px);
+            z-index: 90;
+            display: none;
+            opacity: 0;
+            transition: opacity 0.4s ease;
+        }
+        
+        .drawer-overlay.open {
+            display: block;
+            opacity: 1;
+        }
+        
+        .timeline-node {
+            position: relative;
+            padding-left: 20px;
+            margin-bottom: 10px;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.75rem;
+            color: rgba(228, 225, 236, 0.7);
+        }
+        
+        .timeline-node::before {
+            content: '';
+            position: absolute;
+            left: 0;
+            top: 6px;
+            width: 6px;
+            height: 6px;
+            border-radius: 50%;
+            background: #5856d6;
+        }
+        
+        .timeline-node:not(:last-child)::after {
+            content: '';
+            position: absolute;
+            left: 2px;
+            top: 14px;
+            width: 2px;
+            height: calc(100% + 2px);
+            background: rgba(88, 86, 214, 0.2);
+        }
+    </style>
+</head>
+<body class="font-body-md text-body-md overflow-x-hidden selection:bg-primary/30 max-w-document mx-auto">
+<!-- Evidence Drawer -->
+<div class="drawer-overlay" id="drawer-overlay"></div>
+<div id="evidence-drawer">
+<div class="flex justify-between items-center mb-8 border-b border-white/10 pb-4">
+<h3 class="font-label-sm text-primary uppercase tracking-widest">Artifact Inspector</h3>
+<button class="text-on-surface-variant hover:text-white" onclick="closeDrawer()">
+<span class="material-symbols-outlined text-sm">close</span>
+</button>
+</div>
+<div class="space-y-6">
+<div>
+<span class="font-label-sm text-[10px] text-on-surface-variant uppercase tracking-widest block mb-1">Repository</span>
+<span class="font-code-md text-sm text-white">checkout-service-v3</span>
+</div>
+<div>
+<span class="font-label-sm text-[10px] text-on-surface-variant uppercase tracking-widest block mb-1">Commit Hash</span>
+<span class="font-code-md text-sm text-primary">8f3a9c7b2e1</span>
+</div>
+<div>
+<span class="font-label-sm text-[10px] text-on-surface-variant uppercase tracking-widest block mb-1">Timestamp</span>
+<span class="font-code-md text-sm text-white">2022-10-14 14:32 UTC</span>
+</div>
+<div>
+<span class="font-label-sm text-[10px] text-on-surface-variant uppercase tracking-widest block mb-2">Review Snippet</span>
+<div class="bg-surface-container-low p-4 rounded-sm border border-white/5 font-code-md text-xs text-on-surface/80 leading-relaxed">
+                "We need to consider what happens if Redis falls over here. Let's add a circuit breaker and a fallback to eventual consistency via the outbox table before we merge."
+            </div>
+</div>
+</div>
+</div>
+<!-- 1. COVER -->
+<section class="page-section items-center text-center">
+<div class="max-w-3xl w-full fade-in-up">
+<h4 class="font-label-sm text-label-sm text-on-surface-variant uppercase mb-8 tracking-widest">Credence AI</h4>
+<h1 class="font-display-xl text-display-xl text-on-surface mb-6 font-bold tracking-tight">Developer Intelligence Report</h1>
+<h2 class="font-headline-lg text-headline-lg text-primary/80 font-normal mb-24">Alex Johnson</h2>
+<div class="flex justify-center gap-20 font-code-md text-code-md text-on-surface-variant">
+<div class="flex flex-col items-center">
+<span class="text-on-surface mb-2 font-medium">2,847</span>
+<span class="text-[10px] uppercase tracking-[0.2em] opacity-50">Evidence Points</span>
+</div>
+<div class="flex flex-col items-center">
+<span class="text-on-surface mb-2 font-medium">18</span>
+<span class="text-[10px] uppercase tracking-[0.2em] opacity-50">Repositories</span>
+</div>
+<div class="flex flex-col items-center">
+<span class="text-on-surface mb-2 font-medium">4 Years</span>
+<span class="text-[10px] uppercase tracking-[0.2em] opacity-50">Analyzed</span>
+</div>
+</div>
+</div>
+</section>
+<!-- 2. NARRATIVE PRELUDE (Why are we here?) -->
+<section class="page-section items-center text-center">
+<div class="max-w-4xl mx-auto w-full fade-in-up">
+<p class="font-headline-lg text-3xl leading-relaxed text-on-surface/70 font-light max-w-3xl mx-auto">
+                For four years your GitHub quietly recorded how you think. Every architecture decision. Every production incident. Every review. Every rollback. Every migration. Every difficult decision. This report is the story hidden inside that evidence.
+            </p>
+</div>
+</section>
+<!-- 3. PRIMARY IDENTITY (Who is this engineer?) -->
+<section class="page-section">
+<div class="max-w-5xl mx-auto w-full fade-in-up">
+<div class="mb-16">
+<span class="evidence-label" onclick="openDrawer()">Observed Across: 842 commits, 412 reviews, 18 repositories, 48 months</span>
+<p class="text-on-surface-variant font-light max-w-2xl text-lg">
+                    Across four years of engineering history, a consistent pattern emerges of meticulous risk mitigation and a clear bias towards architectural resilience over sheer feature velocity. Code reviews show an anomalous frequency of questioning edge cases and potential failure states.
+                </p>
+</div>
+<div class="grid grid-cols-1 md:grid-cols-12 gap-16 border-t border-white/10 pt-16">
+<div class="md:col-span-5">
+<span class="evidence-label text-white/50 mb-4 cursor-default">Pattern Recognition</span>
+<p class="font-headline-lg text-2xl text-on-surface/80 font-light mb-8 leading-snug">
+                        Systems Ownership and Defensive Design consistently dominate technical output.
+                    </p>
+</div>
+<div class="md:col-span-7 border-l border-white/10 pl-12">
+<span class="evidence-label mb-2 cursor-default">Conclusion: Primary Identity</span>
+<h2 class="font-display-xl text-5xl mb-6 font-bold tracking-tight">Reliability Engineer</h2>
+<blockquote class="border-l-2 border-primary/30 pl-6 py-2 italic text-on-surface/90 font-light text-lg">
+                        "You consistently optimize for long-term system stability rather than short-term delivery."
+                    </blockquote>
+</div>
+</div>
+</div>
+</section>
+<!-- 4. ALTERNATIVE HYPOTHESES (What else did we consider?) -->
+<section class="page-section bg-surface-container-lowest/30">
+<div class="max-w-4xl mx-auto w-full fade-in-up">
+<h3 class="font-label-sm text-label-sm uppercase text-on-surface-variant mb-16 text-center tracking-widest">Alternative Hypotheses Analyzed</h3>
+<div class="space-y-12">
+<div class="evidence-block">
+<button class="why-btn" onclick="toggleWhy(this)">Why not Platform?</button>
+<div class="flex justify-between items-baseline mb-2">
+<h4 class="font-code-md text-lg text-white">Platform Engineer</h4>
+<span class="font-code-md text-xs text-on-surface-variant/50 uppercase">Confidence: Emerging</span>
+</div>
+<p class="text-on-surface/70 font-light text-sm mb-2">Considered due to high volume of infrastructure-as-code commits (Terraform/K8s).</p>
+<p class="text-on-surface-variant font-code-md text-xs">Rejection Rationale: The intent behind IaC changes was heavily skewed towards failover mechanisms and redundancy rather than developer experience tooling.</p>
+<div class="why-panel">
+<strong>Internal Reasoning:</strong> While commit volume to ops repos is high, PR descriptions lack focus on CLI tools, build speed optimizations, or self-service portals typically indicative of core Platform Engineering.
+</div>
+</div>
+<div class="evidence-block">
+<button class="why-btn" onclick="toggleWhy(this)">Why not Backend?</button>
+<div class="flex justify-between items-baseline mb-2">
+<h4 class="font-code-md text-lg text-white">Backend Product Engineer</h4>
+<span class="font-code-md text-xs text-on-surface-variant/50 uppercase">Confidence: Moderate</span>
+</div>
+<p class="text-on-surface/70 font-light text-sm mb-2">Considered due to sustained contributions to core business logic APIs.</p>
+<p class="text-on-surface-variant font-code-md text-xs">Rejection Rationale: Feature delivery velocity is secondary; contributions overwhelmingly center on refactoring for stability or adding instrumentation to existing features.</p>
+<div class="why-panel">
+<strong>Internal Reasoning:</strong> Ticket velocity for new feature delivery is below average, but time-spent per ticket is high, mostly attributed to writing extensive tests and fallback paths not strictly required by the product spec.
+</div>
+</div>
+<div class="evidence-block border-l-primary/50 bg-primary/5 p-6 mt-8">
+<button class="why-btn" onclick="toggleWhy(this)">Why Reliability?</button>
+<div class="flex justify-between items-baseline mb-2">
+<h4 class="font-code-md text-lg text-primary font-bold">Reliability Engineer</h4>
+<span class="font-code-md text-xs text-primary uppercase">Confidence: Exceptional</span>
+</div>
+<p class="text-on-surface/90 font-light text-sm mb-4">Conclusion supported by dominant focus on circuit breakers, tracing, and incident remediation across all tracked repositories.</p>
+<div class="font-code-md text-xs text-on-surface-variant space-y-1">
+<span class="block text-primary/80 mb-2">Confidence Drivers:</span>
+<span class="block">✓ observed across multiple repositories</span>
+<span class="block">✓ repeated over four years</span>
+<span class="block">✓ consistent during production incidents</span>
+<span class="block">✓ reinforced through reviews</span>
+</div>
+<div class="why-panel mt-4">
+<strong>Internal Reasoning:</strong> 89 post-mortems reviewed. In 82 of them, this engineer was either the author or the primary implementer of the resulting preventative action items.
+</div>
+</div>
+</div>
+</div>
+</section>
+<!-- 5. ENGINEERING PHILOSOPHY (How does this engineer think?) -->
+<section class="page-section items-center text-center">
+<div class="max-w-4xl mx-auto w-full fade-in-up">
+<h3 class="font-label-sm text-label-sm uppercase text-on-surface-variant mb-20 tracking-widest">Engineering Philosophy</h3>
+<div class="space-y-24 text-center">
+<div>
+<span class="evidence-label justify-center mb-6 cursor-default">Observed Across: 142 instances of delaying feature merges for monitoring</span>
+<h2 class="font-headline-lg text-4xl font-light text-white mb-4">Observable systems over hidden complexity.</h2>
+</div>
+<div>
+<span class="evidence-label justify-center mb-6 cursor-default">Observed Across: 89 RFCs advocating for decoupling</span>
+<h2 class="font-headline-lg text-4xl font-light text-white mb-4">Long-term resilience over short-term delivery.</h2>
+</div>
+<div>
+<span class="evidence-label justify-center mb-6 cursor-default">Observed Across: 94% of incident post-mortems cite systemic, not human, failure</span>
+<h2 class="font-headline-lg text-4xl font-light text-white mb-4">Blameless analysis of systemic failure.</h2>
+</div>
+</div>
+</div>
+</section>
+<!-- 6. ENGINEERING SIGNATURE SPREAD (Visualizing the data) -->
+<section class="page-section bg-surface-container-lowest/50">
+<div class="max-w-5xl mx-auto w-full fade-in-up">
+<h3 class="font-label-sm text-label-sm uppercase text-on-surface-variant mb-12 text-center tracking-widest">Engineering Signature</h3>
+<div class="constellation-container mb-8">
+<!-- DataStore Placeholder for Three.js Constellation -->
+                {{DATA:ANIMATION:ANIMATION_25}}
+</div>
+<p class="text-center text-on-surface-variant font-light text-sm max-w-2xl mx-auto">
+                Evidence becomes insight. The topological map of architectural influence. Nodes represent distinct technical competencies; edges represent their co-occurrence in engineering artifacts.
+            </p>
+</div>
+</section>
+<!-- 7. REFINED GENOME (What are the core competencies?) -->
+<section class="page-section overflow-hidden">
+<div class="max-w-6xl mx-auto w-full h-full flex flex-col justify-center fade-in-up">
+<h3 class="font-label-sm text-label-sm text-on-surface-variant uppercase mb-16 text-center tracking-widest">Competency Genome</h3>
+<div class="genome-canvas">
+<!-- Connections -->
+<div class="genome-connection" style="width: 200px; left: 20%; top: 30%; transform: rotate(15deg);"></div>
+<div class="genome-connection" style="width: 250px; left: 40%; top: 40%; transform: rotate(-10deg);"></div>
+<div class="genome-connection" style="width: 180px; left: 60%; top: 60%; transform: rotate(-30deg);"></div>
+<div class="genome-connection" style="width: 150px; left: 30%; top: 60%; transform: rotate(-45deg);"></div>
+<!-- Nodes and Tooltips -->
+<div style="position: absolute; left: 20%; top: 30%;">
+<div class="genome-node"></div>
+<div class="genome-tooltip" style="left: 20px; top: -10px;">
+<div class="flex justify-between items-baseline mb-2">
+<span class="font-label-sm text-primary uppercase">Observability</span>
+<span class="text-[10px] text-primary/70 font-code-md">Strong</span>
+</div>
+<p class="text-xs text-on-surface/80 font-code-md mb-2 border-b border-white/10 pb-2">Observed Across: 73 Artifacts</p>
+<p class="text-xs text-on-surface-variant">Consistent implementation of distributed tracing and custom metrics across high-throughput services.</p>
+</div>
+</div>
+<div style="position: absolute; left: 40%; top: 40%;">
+<div class="genome-node"></div>
+<div class="genome-tooltip" style="left: 20px; top: -10px;">
+<div class="flex justify-between items-baseline mb-2">
+<span class="font-label-sm text-primary uppercase">Failure Recovery</span>
+<span class="text-[10px] text-primary/70 font-code-md">Established</span>
+</div>
+<p class="text-xs text-on-surface/80 font-code-md mb-2 border-b border-white/10 pb-2">Observed Across: 128 Artifacts</p>
+<p class="text-xs text-on-surface-variant">Circuit breakers, graceful degradation paths, and automated rollback triggers.</p>
+</div>
+</div>
+<div style="position: absolute; left: 65%; top: 30%;">
+<div class="genome-node"></div>
+<div class="genome-tooltip" style="left: 20px; top: -10px;">
+<div class="flex justify-between items-baseline mb-2">
+<span class="font-label-sm text-primary uppercase">State Mgt</span>
+<span class="text-[10px] text-primary/70 font-code-md">Moderate</span>
+</div>
+<p class="text-xs text-on-surface/80 font-code-md mb-2 border-b border-white/10 pb-2">Observed Across: 94 Artifacts</p>
+<p class="text-xs text-on-surface-variant">Idempotent API designs and eventual consistency resolution in distributed databases.</p>
+</div>
+</div>
+</div>
+<div class="text-center mt-8 font-code-md text-code-md text-xs text-on-surface-variant/50">
+                Hover nodes to examine evidence-backed competency clusters.
+            </div>
+</div>
+</section>
+<!-- 8. REPOSITORY CASE STUDIES (Where did this happen?) -->
+<section class="page-section bg-surface-container-lowest/30 border-t border-white/5">
+<div class="max-w-5xl mx-auto w-full">
+<h3 class="font-label-sm text-label-sm uppercase text-on-surface-variant mb-16 fade-in-up text-center tracking-widest">Key Repositories</h3>
+<div class="space-y-32">
+<!-- Case Study 1 -->
+<div class="fade-in-up grid grid-cols-1 md:grid-cols-12 gap-12">
+<div class="md:col-span-4">
+<div class="font-code-md text-primary text-sm mb-2">checkout-service-v3</div>
+<span class="text-xs text-on-surface-variant/50 font-code-md uppercase tracking-wider block mb-6">412 Commits • 18 Months</span>
+<div class="mt-8 border-t border-white/5 pt-6">
+<span class="font-label-sm text-[10px] text-on-surface-variant uppercase tracking-widest block mb-4">Architectural Evolution</span>
+<div class="timeline-node">Monolith</div>
+<div class="timeline-node">Service Split</div>
+<div class="timeline-node">Queue</div>
+<div class="timeline-node">Outbox</div>
+<div class="timeline-node text-white font-medium">Event Driven</div>
+</div>
+</div>
+<div class="md:col-span-8 space-y-6 text-sm font-light text-on-surface/80">
+<div>
+<strong class="font-code-md text-white text-xs block mb-1">Context &amp; Challenge</strong>
+<p>Legacy monolithic checkout process failing under peak loads, causing cascading database locks.</p>
+</div>
+<div>
+<strong class="font-code-md text-white text-xs block mb-1">Decisions &amp; Evidence</strong>
+<p>PR #1042: Orchestrated migration to event-driven architecture using Outbox Pattern. Introduced strict timeouts and circuit breakers (PR #1105) before shifting traffic.</p>
+</div>
+<div>
+<strong class="font-code-md text-white text-xs block mb-1">Contribution Impact</strong>
+<p>Transformed a fragile synchronous flow into a resilient, eventually consistent pipeline, eliminating downtime during subsequent peak events.</p>
+</div>
+</div>
+</div>
+<!-- Case Study 2 -->
+<div class="fade-in-up grid grid-cols-1 md:grid-cols-12 gap-12">
+<div class="md:col-span-4">
+<div class="font-code-md text-primary text-sm mb-2">infrastructure-as-code</div>
+<span class="text-xs text-on-surface-variant/50 font-code-md uppercase tracking-wider block mb-6">284 Commits • 24 Months</span>
+</div>
+<div class="md:col-span-8 space-y-6 text-sm font-light text-on-surface/80">
+<div>
+<strong class="font-code-md text-white text-xs block mb-1">Context &amp; Challenge</strong>
+<p>Manual infrastructure provisioning leading to environment drift and deployment anxiety.</p>
+</div>
+<div>
+<strong class="font-code-md text-white text-xs block mb-1">Decisions &amp; Evidence</strong>
+<p>Commit 8f3a9c: Automated Terraform drift detection. PR #45: Standardized highly-available RDS configurations across all staging and production environments.</p>
+</div>
+<div>
+<strong class="font-code-md text-white text-xs block mb-1">Contribution Impact</strong>
+<p>Established the guardrails necessary for safe, automated deployments, significantly reducing mean-time-to-recovery (MTTR).</p>
+</div>
+</div>
+</div>
+</div>
+</div>
+</section>
+<!-- 8.5 SCOPE OF ASSESSMENT -->
+<section class="page-section">
+<div class="max-w-4xl mx-auto w-full fade-in-up">
+<h3 class="font-label-sm text-label-sm uppercase text-on-surface-variant mb-16 text-center tracking-widest">Scope of Assessment</h3>
+<p class="text-center text-on-surface-variant font-light text-sm max-w-2xl mx-auto mb-12">
+                This assessment is bound by the evidence provided. The following domains lacked sufficient artifacts to form a confident evaluation.
+            </p>
+<div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+<div class="border border-white/5 p-6">
+<h4 class="font-code-md text-sm text-white mb-2">Frontend Architecture</h4>
+<p class="text-on-surface/50 font-light text-xs">No significant PRs or commits found related to client-side state management, bundle optimization, or component architecture.</p>
+</div>
+<div class="border border-white/5 p-6">
+<h4 class="font-code-md text-sm text-white mb-2">Mobile Engineering</h4>
+<p class="text-on-surface/50 font-light text-xs">Zero artifacts found pertaining to iOS/Android development or native bridging.</p>
+</div>
+</div>
+</div>
+</section>
+<!-- 8.6 EVIDENCE-BACKED GROWTH -->
+<section class="page-section bg-surface-container-lowest/50">
+<div class="max-w-4xl mx-auto w-full fade-in-up">
+<h3 class="font-label-sm text-label-sm uppercase text-on-surface-variant mb-16 text-center tracking-widest">Evidence-Backed Growth</h3>
+<div class="border border-white/5 p-8">
+<div class="grid grid-cols-1 md:grid-cols-2 gap-8 mb-8">
+<div>
+<span class="font-label-sm text-[10px] text-primary uppercase tracking-widest block mb-2">Observed Strength</span>
+<p class="text-sm text-white font-light">Strong deployment ownership and CI/CD mastery.</p>
+</div>
+<div>
+<span class="font-label-sm text-[10px] text-on-surface-variant uppercase tracking-widest block mb-2">Limited Evidence</span>
+<p class="text-sm text-white font-light">Distributed consensus protocols and multi-region failover.</p>
+</div>
+</div>
+<div class="border-t border-white/5 pt-8 text-center">
+<span class="font-label-sm text-[10px] text-primary uppercase tracking-widest block mb-4">Derived Challenge</span>
+<h4 class="font-headline-lg text-2xl text-white font-light mb-2">Large-scale distributed coordination.</h4>
+<p class="text-sm text-on-surface/70 font-light max-w-lg mx-auto">The natural evolution from ensuring single-service reliability is orchestrating reliability across geographically distributed fleets.</p>
+</div>
+</div>
+</div>
+</section>
+<!-- 9. ENGINEERING DECISIONS (How are patterns applied?) -->
+<section class="page-section">
+<div class="max-w-4xl mx-auto w-full fade-in-up">
+<h3 class="font-label-sm text-label-sm uppercase text-on-surface-variant mb-16 text-center tracking-widest">Decision Patterns</h3>
+<div class="space-y-8">
+<div class="border border-white/5 bg-surface-container/20 p-8 flex flex-col md:flex-row gap-8 items-start">
+<div class="bg-surface-container p-4 text-center min-w-[120px]">
+<span class="block font-code-md text-2xl text-white mb-1">18x</span>
+<span class="block text-[10px] text-on-surface-variant uppercase tracking-wider">Occurrences</span>
+</div>
+<div>
+<h4 class="font-code-md text-lg text-primary mb-2">Introduces monitoring before scaling</h4>
+<p class="text-on-surface/70 font-light text-sm">Consistently halts scaling operations or major refactors until baseline observability (metrics, logs, traces) is explicitly defined and deployed in the target service.</p>
+</div>
+</div>
+<div class="border border-white/5 bg-surface-container/20 p-8 flex flex-col md:flex-row gap-8 items-start">
+<div class="bg-surface-container p-4 text-center min-w-[120px]">
+<span class="block font-code-md text-2xl text-white mb-1">42x</span>
+<span class="block text-[10px] text-on-surface-variant uppercase tracking-wider">Occurrences</span>
+</div>
+<div>
+<h4 class="font-code-md text-lg text-primary mb-2">Defensive Edge-Case Reviews</h4>
+<p class="text-on-surface/70 font-light text-sm">Code review comments specifically targeting network partitions, database connection exhaustion, or third-party API latency spikes during standard feature development.</p>
+</div>
+</div>
+</div>
+</div>
+</section>
+<!-- 10. EVIDENCE WALL (The foundation of trust) -->
+<section class="py-32 bg-[#050508] border-t border-white/5 overflow-hidden fade-in-up">
+<div class="max-w-[100vw] px-4">
+<h3 class="font-label-sm text-label-sm uppercase text-on-surface-variant/30 mb-8 text-center tracking-widest">Raw Evidence Appendix (Sample)</h3>
+<div class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-x-4 gap-y-2 opacity-40 hover:opacity-100 transition-opacity duration-1000 cursor-pointer" onclick="openDrawer()">
+<!-- Repeating small text blocks to simulate a massive wall of evidence -->
+<div class="evidence-wall-item hover:text-primary transition-colors">commit 8f3a9c: update terraform state lock</div>
+<div class="evidence-wall-item hover:text-primary transition-colors">pr #1042: outbox pattern implementation</div>
+<div class="evidence-wall-item hover:text-primary transition-colors">review: "what if redis fails here?"</div>
+<div class="evidence-wall-item hover:text-primary transition-colors">commit 2b49e1: add prometheus gauge</div>
+<div class="evidence-wall-item hover:text-primary transition-colors">pr #892: tracing headers across gateway</div>
+<div class="evidence-wall-item hover:text-primary transition-colors">commit 9c83f2: graceful shutdown hook</div>
+<div class="evidence-wall-item hover:text-primary transition-colors">issue #401: document recovery process</div>
+<div class="evidence-wall-item hover:text-primary transition-colors">commit 7a11b4: increase timeout threshold</div>
+<div class="evidence-wall-item hover:text-primary transition-colors">pr #1105: circuit breaker for payment api</div>
+<div class="evidence-wall-item hover:text-primary transition-colors">review: "needs idempotent retry logic"</div>
+<div class="evidence-wall-item hover:text-primary transition-colors">commit 3d55c9: k8s readiness probe fix</div>
+<div class="evidence-wall-item hover:text-primary transition-colors">commit 1e44a2: dead letter queue config</div>
+<div class="evidence-wall-item hover:text-primary transition-colors">pr #1201: rate limiting middleware</div>
+<div class="evidence-wall-item hover:text-primary transition-colors">review: "missing transaction rollback"</div>
+<div class="evidence-wall-item hover:text-primary transition-colors">commit 5f66d8: alert on high error rate</div>
+<div class="evidence-wall-item hover:text-primary transition-colors">commit 0b22e1: decouple notification service</div>
+<div class="evidence-wall-item hover:text-primary transition-colors">pr #1340: chaos mesh experiments</div>
+<div class="evidence-wall-item hover:text-primary transition-colors">review: "unbounded memory growth risk"</div>
+</div>
+</div>
+</section>
+<!-- 11. SILENT ENDING -->
+<section class="page-section items-center text-center pb-64 pt-64">
+<div class="max-w-3xl w-full fade-in-up">
+<p class="font-body-md text-lg text-on-surface/50 font-light mb-16 leading-relaxed">
+                Nothing in this report exists without supporting engineering history.
+            </p>
+<h2 class="font-headline-lg text-4xl text-on-surface/90 font-light">
+                Engineering leaves evidence.<br/>
+<span class="text-primary/70 block mt-4">Credence learned to read it.</span>
+</h2>
+</div>
+</section>
+<script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const observer = new IntersectionObserver((entries) => {
+                entries.forEach(entry => {
+                    if (entry.isIntersecting) {
+                        entry.target.classList.add('visible');
+                    }
+                });
+            }, { threshold: 0.1 });
+
+            document.querySelectorAll('.fade-in-up').forEach((el) => {
+                observer.observe(el);
+            });
+        });
+        
+        function openDrawer() {
+            document.getElementById('evidence-drawer').classList.add('open');
+            document.getElementById('drawer-overlay').classList.add('open');
+        }
+        
+        function closeDrawer() {
+            document.getElementById('evidence-drawer').classList.remove('open');
+            document.getElementById('drawer-overlay').classList.remove('open');
+        }
+        
+        document.getElementById('drawer-overlay').addEventListener('click', closeDrawer);
+        
+        function toggleWhy(btn) {
+            const panel = btn.nextElementSibling.nextElementSibling.nextElementSibling;
+            if(panel && panel.classList.contains('why-panel')) {
+                panel.classList.toggle('active');
+            } else {
+                // Fallback for the third block which has a different structure
+                const altPanel = btn.parentElement.querySelector('.why-panel');
+                if(altPanel) altPanel.classList.toggle('active');
+            }
+        }
+    </script>
+</body></html>

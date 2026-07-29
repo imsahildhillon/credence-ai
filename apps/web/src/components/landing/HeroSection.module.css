@@ -1,0 +1,18 @@
+/* Ambient background glow for the landing hero — page-specific, so it
+   stays colocated here rather than in globals.css (reserved for
+   app-wide/design-token/reset/typography concerns). The global
+   `prefers-reduced-motion` rule in globals.css already collapses all
+   animation durations app-wide, so no separate handling is needed here. */
+@keyframes heroGlowBreathe {
+  0%,
+  100% {
+    opacity: 0.7;
+  }
+  50% {
+    opacity: 1;
+  }
+}
+
+.heroGlow {
+  animation: heroGlowBreathe 40s ease-in-out infinite;
+}

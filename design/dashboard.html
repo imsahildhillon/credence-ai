@@ -1,0 +1,544 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Credence AI - Engineering Intelligence Workspace</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com" rel="preconnect"/>
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&amp;family=Inter+Tight:wght@600;700&amp;family=JetBrains+Mono:ital,wght@0,100..800;1,100..800&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "primary-fixed": "#e2dfff",
+                        "on-secondary-fixed-variant": "#004493",
+                        "on-secondary": "#002e69",
+                        "surface-container": "#1f1f27",
+                        "error": "#ffb4ab",
+                        "surface-dim": "#13131a",
+                        "primary-container": "#5856d6",
+                        "tertiary": "#ffb785",
+                        "outline": "#918f9f",
+                        "surface": "#13131a",
+                        "on-surface": "#e4e1ec",
+                        "on-primary-fixed": "#0c006a",
+                        "on-error-container": "#ffdad6",
+                        "on-primary-fixed-variant": "#3631b4",
+                        "inverse-primary": "#4f4ccd",
+                        "surface-container-lowest": "#0e0d15",
+                        "tertiary-fixed-dim": "#ffb785",
+                        "secondary-container": "#4b8eff",
+                        "on-background": "#e4e1ec",
+                        "surface-variant": "#35343c",
+                        "outline-variant": "#464554",
+                        "on-tertiary-container": "#ffe1cf",
+                        "background": "#13131a",
+                        "error-container": "#93000a",
+                        "secondary-fixed-dim": "#adc6ff",
+                        "on-secondary-container": "#00285c",
+                        "surface-container-highest": "#35343c",
+                        "on-tertiary": "#502500",
+                        "inverse-surface": "#e4e1ec",
+                        "surface-container-high": "#2a2931",
+                        "on-primary": "#1c0b9f",
+                        "tertiary-fixed": "#ffdcc6",
+                        "on-surface-variant": "#c7c4d6",
+                        "on-secondary-fixed": "#001a41",
+                        "surface-container-low": "#1b1b23",
+                        "on-primary-container": "#e7e4ff",
+                        "on-tertiary-fixed": "#301400",
+                        "surface-bright": "#393841",
+                        "secondary": "#adc6ff",
+                        "inverse-on-surface": "#302f38",
+                        "primary": "#c2c1ff",
+                        "surface-tint": "#c2c1ff",
+                        "secondary-fixed": "#d8e2ff",
+                        "on-tertiary-fixed-variant": "#713700",
+                        "on-error": "#690005",
+                        "primary-fixed-dim": "#c2c1ff",
+                        "tertiary-container": "#a25100",
+                        "workspace-bg": "#0A0B0E"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.125rem",
+                        "lg": "0.25rem",
+                        "xl": "0.5rem",
+                        "full": "0.75rem",
+                        "2xl": "1rem"
+                    },
+                    "spacing": {
+                        "gutter": "24px",
+                        "container-max": "1120px",
+                        "unit": "4px",
+                        "margin-mobile": "16px",
+                        "margin-desktop": "40px",
+                        "section-gap": "160px"
+                    },
+                    "fontFamily": {
+                        "display-xl": ["Inter Tight"],
+                        "headline-lg": ["Inter Tight"],
+                        "body-md": ["Inter"],
+                        "code-md": ["JetBrains Mono"],
+                        "label-sm": ["JetBrains Mono"]
+                    },
+                    "fontSize": {
+                        "display-xl": ["64px", { "lineHeight": "72px", "letterSpacing": "-0.04em", "fontWeight": "700" }],
+                        "body-md": ["16px", { "lineHeight": "24px", "fontWeight": "400" }],
+                        "headline-lg": ["32px", { "lineHeight": "40px", "letterSpacing": "-0.02em", "fontWeight": "600" }],
+                        "code-md": ["14px", { "lineHeight": "20px", "fontWeight": "400" }],
+                        "label-sm": ["13px", { "lineHeight": "16px", "fontWeight": "500" }]
+                    },
+                    backgroundImage: {
+                        'workspace-glow': 'radial-gradient(circle at 50% 0%, #1B1E4B 0%, transparent 22%), radial-gradient(circle at 80% 50%, #2A2620 0%, transparent 10%)'
+                    }
+                }
+            }
+        }
+    </script>
+<style>
+        .glass-panel {
+            background: rgba(255, 255, 255, 0.06);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 16px;
+        }
+        
+        .glass-pill {
+            background: rgba(255, 255, 255, 0.05);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            transition: all 0.3s cubic-bezier(0.22, 1, 0.36, 1);
+        }
+        
+        .glass-pill:hover {
+            background: rgba(255, 255, 255, 0.1);
+            box-shadow: 0 0 20px rgba(194, 193, 255, 0.1);
+        }
+        
+        .fade-in-up {
+            opacity: 0;
+            transform: translateY(16px);
+            transition: opacity 700ms cubic-bezier(0.22, 1, 0.36, 1), transform 700ms cubic-bezier(0.22, 1, 0.36, 1);
+        }
+        
+        .fade-in-up.visible {
+            opacity: 1;
+            transform: translateY(0);
+        }
+        
+        body {
+            background-color: #0A0B0E;
+            color: #e4e1ec;
+            -webkit-font-smoothing: antialiased;
+        }
+
+        .dna-strand {
+            width: 1px;
+            background: rgba(255,255,255,0.2);
+            transition: all 0.5s ease;
+        }
+        
+        .dna-marker {
+            width: 8px;
+            height: 2px;
+            background: #c2c1ff;
+            transform: translateX(-3.5px);
+            transition: all 0.3s ease;
+        }
+        
+        .dna-column:hover .dna-strand {
+            background: rgba(194, 193, 255, 0.5);
+        }
+        
+        .dna-column:hover .dna-marker {
+            width: 16px;
+            transform: translateX(-7.5px);
+            box-shadow: 0 0 10px rgba(194, 193, 255, 0.5);
+        }
+        
+        .connection-line {
+            position: absolute;
+            height: 1px;
+            background: linear-gradient(90deg, rgba(194,193,255,0) 0%, rgba(194,193,255,0.4) 50%, rgba(194,193,255,0) 100%);
+            opacity: 0;
+            transition: opacity 0.4s ease;
+            pointer-events: none;
+            z-index: 10;
+        }
+        
+        .dna-column:hover ~ .connection-layer .line-reliability,
+        .dna-column.hover-reliability ~ .connection-layer .line-reliability {
+            opacity: 1;
+        }
+
+        .unfolding-sequence {
+            animation: hideSequence 6s forwards;
+        }
+        
+        .unfolding-msg {
+            opacity: 0;
+            position: absolute;
+            animation: showHideMsg 1.5s forwards;
+        }
+        
+        .unfolding-msg:nth-child(1) { animation-delay: 0.5s; }
+        .unfolding-msg:nth-child(2) { animation-delay: 2s; }
+        .unfolding-msg:nth-child(3) { animation-delay: 3.5s; }
+        .unfolding-msg:nth-child(4) { animation-delay: 5s; }
+        
+        .main-content {
+            opacity: 0;
+            animation: showContent 1s forwards;
+            animation-delay: 6.5s;
+        }
+        
+        @keyframes showHideMsg {
+            0% { opacity: 0; transform: translateY(10px); }
+            20% { opacity: 1; transform: translateY(0); }
+            80% { opacity: 1; transform: translateY(0); }
+            100% { opacity: 0; transform: translateY(-10px); }
+        }
+        
+        @keyframes hideSequence {
+            0% { display: flex; }
+            99% { display: flex; }
+            100% { display: none; height: 0; overflow: hidden; }
+        }
+        
+        @keyframes showContent {
+            0% { opacity: 0; }
+            100% { opacity: 1; }
+        }
+        
+        .discovery-card {
+            transition: all 0.3s ease;
+            overflow: hidden;
+            max-height: 80px;
+        }
+        
+        .discovery-card:hover {
+            max-height: 200px;
+            background: rgba(255,255,255,0.1);
+        }
+        
+        .timeline-node::before {
+            content: '';
+            position: absolute;
+            left: -25px;
+            top: 5px;
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            background: #c2c1ff;
+            box-shadow: 0 0 10px rgba(194,193,255,0.5);
+        }
+        
+        .timeline-line {
+            position: absolute;
+            left: -21px;
+            top: 15px;
+            bottom: -30px;
+            width: 2px;
+            background: rgba(255,255,255,0.1);
+        }
+        
+        .timeline-item:last-child .timeline-line {
+            display: none;
+        }
+    </style>
+</head>
+<body class="bg-workspace-bg bg-workspace-glow min-h-screen selection:bg-primary-container/30 selection:text-primary">
+<!-- Top Navigation Shell -->
+<nav class="fixed top-0 w-full z-50 bg-workspace-bg/80 backdrop-blur-xl border-b border-white/5 h-16 flex items-center px-margin-desktop transition-all duration-300">
+<div class="flex justify-between items-center w-full max-w-container-max mx-auto">
+<div class="flex items-center gap-8">
+<span class="font-headline-lg text-2xl tracking-tighter text-on-surface">Credence AI</span>
+<div class="hidden md:flex gap-6">
+<a class="text-primary font-medium border-b-2 border-primary pb-1 transition-colors duration-200" href="#">Dashboard</a>
+<a class="text-on-surface-variant font-medium hover:text-primary transition-colors duration-200" href="#">Intelligence Report</a>
+<a class="text-on-surface-variant font-medium hover:text-primary transition-colors duration-200" href="#">Evidence</a>
+<a class="text-on-surface-variant font-medium hover:text-primary transition-colors duration-200" href="#">Repositories</a>
+</div>
+</div>
+<div class="flex items-center gap-4">
+<div class="flex items-center gap-3">
+<span class="font-code-md text-on-surface-variant text-sm">@alexdev</span>
+<div class="w-8 h-8 rounded-full overflow-hidden border border-white/10">
+<img alt="User avatar" class="w-full h-full object-cover" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDUNoBwExqHoG0aOiekJv4QW-in3l7auCq_Cv_DCqvnvMt4lHsS__SWSR22r-1dWAFurDH4dvXgOi_Ku7s3SLgReUQd65ImpJXXvIUnk9fn2gAFaD0UudPrX_fRd83Tk0KHuOgI3KWvKPcr0M2mUW9ZoCCBpORsJ90sUPGkxxAciecFAHWLe0lsYbY07rxiLaK_vBnjCnSbk9Hg3uUkExrin5iS--qNE8feesN0Rni36MNxNTrNRgmJ"/>
+</div>
+</div>
+</div>
+</div>
+</nav>
+<!-- Discovery Unfolding Sequence -->
+<div class="fixed inset-0 z-40 flex items-center justify-center unfolding-sequence bg-workspace-bg pointer-events-none">
+<div class="relative h-12 w-96 flex items-center justify-center font-code-md text-primary">
+<div class="unfolding-msg flex items-center gap-2"><span class="material-symbols-outlined text-sm">check</span> Ownership pattern identified</div>
+<div class="unfolding-msg flex items-center gap-2"><span class="material-symbols-outlined text-sm">check</span> Reliability signal confirmed</div>
+<div class="unfolding-msg flex items-center gap-2"><span class="material-symbols-outlined text-sm">check</span> Architecture leadership detected</div>
+<div class="unfolding-msg flex items-center gap-2"><span class="material-symbols-outlined text-sm">check</span> Mentoring behaviour verified</div>
+</div>
+</div>
+<main class="main-content pt-32 pb-32 px-margin-mobile md:px-margin-desktop max-w-container-max mx-auto space-y-section-gap overflow-x-hidden">
+<!-- SECTION 1: Hero -->
+<section class="fade-in-up flex flex-col items-start max-w-4xl">
+<span class="font-label-sm text-primary tracking-widest uppercase mb-6 opacity-80">Engineering Intelligence</span>
+<h1 class="font-display-xl text-on-surface mb-4">Good morning, Alex.</h1>
+<p class="font-headline-lg text-on-surface-variant/70 font-normal max-w-3xl mb-12 leading-tight">
+                We discovered strong patterns of reliability engineering across your GitHub.
+            </p>
+<div class="flex flex-wrap gap-4 mb-16">
+<button class="glass-pill px-8 py-4 rounded-full font-label-sm text-primary flex items-center gap-3 group">
+                    Explore Intelligence Report
+                    <span class="material-symbols-outlined text-sm group-hover:translate-x-1 transition-transform">arrow_forward</span>
+</button>
+<button class="px-8 py-4 rounded-full font-label-sm text-on-surface-variant hover:text-on-surface transition-colors">
+                    View Evidence
+                </button>
+</div>
+<div class="grid grid-cols-2 md:grid-cols-4 gap-px bg-white/5 w-full rounded-2xl overflow-hidden glass-panel border-white/5">
+<div class="bg-workspace-bg/80 p-6 flex flex-col gap-2">
+<span class="font-code-md text-on-surface-variant/50 uppercase text-xs tracking-wider">Evidence Connected</span>
+<span class="font-headline-lg text-on-surface">2,847</span>
+</div>
+<div class="bg-workspace-bg/80 p-6 flex flex-col gap-2">
+<span class="font-code-md text-on-surface-variant/50 uppercase text-xs tracking-wider">Repositories</span>
+<span class="font-headline-lg text-on-surface">18</span>
+</div>
+<div class="bg-workspace-bg/80 p-6 flex flex-col gap-2">
+<span class="font-code-md text-on-surface-variant/50 uppercase text-xs tracking-wider">Competencies</span>
+<span class="font-headline-lg text-on-surface">26</span>
+</div>
+<div class="bg-workspace-bg/80 p-6 flex flex-col gap-2">
+<span class="font-code-md text-on-surface-variant/50 uppercase text-xs tracking-wider">Confidence</span>
+<span class="font-headline-lg text-primary">Established</span>
+</div>
+</div>
+</section>
+<!-- SECTION 2: AI Summary & Repository Spotlight -->
+<section class="fade-in-up grid grid-cols-1 md:grid-cols-2 gap-12">
+<div>
+<div class="flex items-start gap-6 mb-8">
+<div class="w-10 h-10 rounded-full glass-panel flex items-center justify-center shrink-0 border-primary/30 text-primary">
+<span class="material-symbols-outlined">auto_awesome</span>
+</div>
+<p class="font-body-md text-xl leading-relaxed text-on-surface-variant">
+                        Our analysis found recurring ownership of distributed systems, strong rollback discipline, and sustained operational responsibility. You consistently demonstrate architectural foresight, particularly in mitigating cascading failures across high-throughput services. Evidence suggests a mature approach to observability, often proactively instrumenting critical paths before deploying to production.
+                    </p>
+</div>
+</div>
+<div class="glass-panel p-8 relative overflow-hidden group">
+<div class="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity">
+<span class="material-symbols-outlined text-6xl">source</span>
+</div>
+<span class="font-code-md text-primary/70 uppercase text-xs tracking-widest mb-2 block">Repository Spotlight</span>
+<h3 class="font-headline-lg text-on-surface mb-2">payment-service</h3>
+<p class="font-body-md text-on-surface-variant/70 mb-6">Largest architectural evolution · Highest ownership</p>
+<p class="font-body-md text-on-surface-variant mb-8">Observed driving the migration from monolithic payment processing to a distributed event-driven architecture, demonstrating significant technical leadership and resilience planning.</p>
+<a class="font-code-md text-primary flex items-center gap-2 hover:underline" href="#">
+                    View Evidence <span class="material-symbols-outlined text-sm">open_in_new</span>
+</a>
+</div>
+</section>
+<!-- SECTION 3: Latest Discoveries -->
+<section class="fade-in-up">
+<h3 class="font-code-md text-on-surface-variant/50 uppercase tracking-widest mb-8">Latest Discoveries</h3>
+<div class="flex flex-col gap-4">
+<div class="glass-panel p-6 discovery-card cursor-pointer">
+<div class="flex justify-between items-center mb-4">
+<h4 class="font-headline-lg text-xl text-on-surface">Authentication ownership detected</h4>
+<span class="material-symbols-outlined text-on-surface-variant">expand_more</span>
+</div>
+<div class="opacity-0 transition-opacity duration-300 delay-100 h-0 overflow-hidden group-hover:opacity-100 group-hover:h-auto mt-4" style="opacity:1; height:auto;">
+<p class="font-body-md text-on-surface-variant mb-4">Consistent pattern of commits related to OAuth2 implementation and JWT token management across multiple microservices.</p>
+<div class="flex gap-4 font-code-md text-sm">
+<span class="bg-white/5 px-3 py-1 rounded text-primary">auth-gateway</span>
+<span class="text-on-surface-variant/70">PR #402: Implement refresh token rotation</span>
+</div>
+</div>
+</div>
+<div class="glass-panel p-6 discovery-card cursor-pointer">
+<div class="flex justify-between items-center mb-4">
+<h4 class="font-headline-lg text-xl text-on-surface">Long-term release discipline observed</h4>
+<span class="material-symbols-outlined text-on-surface-variant">expand_more</span>
+</div>
+<div class="opacity-0 transition-opacity duration-300 delay-100 h-0 overflow-hidden mt-4">
+<p class="font-body-md text-on-surface-variant mb-4">Evidence of semantic versioning adherence and consistent changelog generation over a 24-month period.</p>
+</div>
+</div>
+<div class="glass-panel p-6 discovery-card cursor-pointer">
+<div class="flex justify-between items-center mb-4">
+<h4 class="font-headline-lg text-xl text-on-surface">Strong rollback behaviour identified</h4>
+<span class="material-symbols-outlined text-on-surface-variant">expand_more</span>
+</div>
+<div class="opacity-0 transition-opacity duration-300 delay-100 h-0 overflow-hidden mt-4">
+<p class="font-body-md text-on-surface-variant mb-4">Proactive feature flag toggling and rapid reverts during deployment anomalies, minimizing MTTR.</p>
+</div>
+</div>
+</div>
+</section>
+<!-- SECTION 4: Engineering DNA -->
+<section class="fade-in-up relative h-[500px] w-full flex flex-col justify-center items-center">
+<div class="absolute inset-0 bg-gradient-to-b from-transparent via-workspace-bg/50 to-transparent z-10 pointer-events-none"></div>
+<div class="w-full flex justify-between items-end h-[400px] px-12 relative z-20" id="dna-container">
+<!-- Connection Layer -->
+<div class="absolute inset-0 pointer-events-none connection-layer z-0">
+<div class="connection-line line-reliability" style="top: 30%; left: 10%; width: 60%; transform: rotate(15deg);"></div>
+<div class="connection-line line-reliability" style="top: 50%; left: 10%; width: 80%; transform: rotate(-5deg);"></div>
+<div class="connection-line line-reliability" style="top: 70%; left: 10%; width: 40%; transform: rotate(-20deg);"></div>
+</div>
+<!-- Columns -->
+<div class="dna-column relative h-full flex flex-col justify-end items-center group cursor-pointer w-16" onmouseenter="this.classList.add('hover-reliability')" onmouseleave="this.classList.remove('hover-reliability')">
+<div class="absolute bottom-[-40px] font-code-md text-[10px] text-on-surface-variant/50 opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap">Reliability</div>
+<div class="dna-strand h-[80%] absolute left-1/2 bottom-0"></div>
+<div class="dna-marker absolute bottom-[70%]"></div>
+<div class="dna-marker absolute bottom-[50%] bg-primary/40"></div>
+<div class="dna-marker absolute bottom-[30%]"></div>
+<div class="dna-marker absolute bottom-[10%] bg-primary/20"></div>
+</div>
+<div class="dna-column relative h-full flex flex-col justify-end items-center group cursor-pointer w-16">
+<div class="absolute bottom-[-40px] font-code-md text-[10px] text-on-surface-variant/50 opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap">Architecture</div>
+<div class="dna-strand h-[65%] absolute left-1/2 bottom-0"></div>
+<div class="dna-marker absolute bottom-[55%]"></div>
+<div class="dna-marker absolute bottom-[35%] bg-primary/40"></div>
+<div class="dna-marker absolute bottom-[15%]"></div>
+</div>
+<div class="dna-column relative h-full flex flex-col justify-end items-center group cursor-pointer w-16">
+<div class="absolute bottom-[-40px] font-code-md text-[10px] text-on-surface-variant/50 opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap">Performance</div>
+<div class="dna-strand h-[90%] absolute left-1/2 bottom-0"></div>
+<div class="dna-marker absolute bottom-[85%]"></div>
+<div class="dna-marker absolute bottom-[65%] bg-primary/60"></div>
+<div class="dna-marker absolute bottom-[45%]"></div>
+<div class="dna-marker absolute bottom-[25%] bg-primary/30"></div>
+</div>
+<div class="dna-column relative h-full flex flex-col justify-end items-center group cursor-pointer w-16">
+<div class="absolute bottom-[-40px] font-code-md text-[10px] text-on-surface-variant/50 opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap">Security</div>
+<div class="dna-strand h-[40%] absolute left-1/2 bottom-0"></div>
+<div class="dna-marker absolute bottom-[35%]"></div>
+<div class="dna-marker absolute bottom-[15%] bg-primary/40"></div>
+</div>
+<div class="dna-column relative h-full flex flex-col justify-end items-center group cursor-pointer w-16">
+<div class="absolute bottom-[-40px] font-code-md text-[10px] text-on-surface-variant/50 opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap">Mentorship</div>
+<div class="dna-strand h-[75%] absolute left-1/2 bottom-0"></div>
+<div class="dna-marker absolute bottom-[65%]"></div>
+<div class="dna-marker absolute bottom-[45%] bg-primary/40"></div>
+<div class="dna-marker absolute bottom-[25%]"></div>
+</div>
+<div class="dna-column relative h-full flex flex-col justify-end items-center group cursor-pointer w-16">
+<div class="absolute bottom-[-40px] font-code-md text-[10px] text-on-surface-variant/50 opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap">Testing</div>
+<div class="dna-strand h-[85%] absolute left-1/2 bottom-0"></div>
+<div class="dna-marker absolute bottom-[75%]"></div>
+<div class="dna-marker absolute bottom-[55%] bg-primary/70"></div>
+<div class="dna-marker absolute bottom-[35%]"></div>
+<div class="dna-marker absolute bottom-[15%]"></div>
+</div>
+<div class="dna-column relative h-full flex flex-col justify-end items-center group cursor-pointer w-16">
+<div class="absolute bottom-[-40px] font-code-md text-[10px] text-on-surface-variant/50 opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap">Observability</div>
+<div class="dna-strand h-[55%] absolute left-1/2 bottom-0"></div>
+<div class="dna-marker absolute bottom-[45%]"></div>
+<div class="dna-marker absolute bottom-[25%] bg-primary/40"></div>
+</div>
+<div class="dna-column relative h-full flex flex-col justify-end items-center group cursor-pointer w-16">
+<div class="absolute bottom-[-40px] font-code-md text-[10px] text-on-surface-variant/50 opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap">API Design</div>
+<div class="dna-strand h-[70%] absolute left-1/2 bottom-0"></div>
+<div class="dna-marker absolute bottom-[60%]"></div>
+<div class="dna-marker absolute bottom-[40%] bg-primary/50"></div>
+<div class="dna-marker absolute bottom-[20%]"></div>
+</div>
+</div>
+<div class="absolute inset-x-0 bottom-0 h-px bg-white/5 w-full z-0"></div>
+<div class="absolute top-8 left-0 font-code-md text-sm text-on-surface-variant/40 tracking-widest uppercase">Engineering DNA Sequencing</div>
+</section>
+<!-- SECTION 5: Evidence Timeline & Growth -->
+<section class="fade-in-up grid grid-cols-1 md:grid-cols-2 gap-16">
+<div>
+<h3 class="font-code-md text-on-surface-variant/50 uppercase tracking-widest mb-10">Evolution Timeline</h3>
+<div class="pl-8 flex flex-col gap-10">
+<div class="relative timeline-item timeline-node">
+<div class="timeline-line"></div>
+<span class="font-code-md text-primary text-sm mb-1 block">2021</span>
+<h4 class="font-headline-lg text-lg text-on-surface">Backend Foundations</h4>
+<p class="font-body-md text-on-surface-variant/70 mt-2">Initial core service implementations.</p>
+</div>
+<div class="relative timeline-item timeline-node">
+<div class="timeline-line"></div>
+<span class="font-code-md text-primary text-sm mb-1 block">2022</span>
+<h4 class="font-headline-lg text-lg text-on-surface">Migration Ownership</h4>
+<p class="font-body-md text-on-surface-variant/70 mt-2">Led refactoring of monolithic structures.</p>
+</div>
+<div class="relative timeline-item timeline-node">
+<div class="timeline-line"></div>
+<span class="font-code-md text-primary text-sm mb-1 block">2023</span>
+<h4 class="font-headline-lg text-lg text-on-surface">Platform Reliability</h4>
+<p class="font-body-md text-on-surface-variant/70 mt-2">Introduced robust SLI/SLO monitoring.</p>
+</div>
+<div class="relative timeline-item timeline-node">
+<div class="timeline-line"></div>
+<span class="font-code-md text-primary text-sm mb-1 block">2024</span>
+<h4 class="font-headline-lg text-lg text-on-surface">Engineering Leadership</h4>
+<p class="font-body-md text-on-surface-variant/70 mt-2">Cross-team architectural guidance.</p>
+</div>
+</div>
+</div>
+<div>
+<h3 class="font-code-md text-on-surface-variant/50 uppercase tracking-widest mb-8">Potential Growth</h3>
+<div class="glass-panel p-8">
+<div class="flex items-center gap-3 mb-4">
+<span class="material-symbols-outlined text-primary">trending_up</span>
+<h4 class="font-headline-lg text-xl text-on-surface">Cross-team architecture influence</h4>
+</div>
+<p class="font-body-md text-on-surface-variant leading-relaxed">
+                        Observed deep ownership inside two repositories. Limited architectural decisions across additional domains. Expanding influence to guide broader technical strategy could accelerate leadership trajectory.
+                    </p>
+</div>
+</div>
+</section>
+</main>
+<script>
+        // Intersection Observer for fade-in animations
+        document.addEventListener('DOMContentLoaded', () => {
+            const observerOptions = {
+                root: null,
+                rootMargin: '0px',
+                threshold: 0.2
+            };
+
+            const observer = new IntersectionObserver((entries, observer) => {
+                entries.forEach(entry => {
+                    if (entry.isIntersecting) {
+                        entry.target.classList.add('visible');
+                    }
+                });
+            }, observerOptions);
+
+            document.querySelectorAll('.fade-in-up').forEach(element => {
+                observer.observe(element);
+            });
+            
+            // Expandable cards logic
+            document.querySelectorAll('.discovery-card').forEach(card => {
+                card.addEventListener('mouseenter', () => {
+                   const content = card.querySelector('div.opacity-0');
+                   if(content) {
+                       content.style.opacity = '1';
+                       content.style.height = 'auto';
+                   }
+                });
+                card.addEventListener('mouseleave', () => {
+                   const content = card.querySelector('div.opacity-0');
+                   if(content) {
+                       content.style.opacity = '0';
+                       content.style.height = '0';
+                   }
+                });
+            });
+        });
+    </script>
+</body></html>

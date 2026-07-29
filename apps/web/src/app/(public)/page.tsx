@@ -1,31 +1,31 @@
-import Link from 'next/link';
-
-import { Button } from '@/components/ui/button';
+import { EvidencePanel } from '@/components/landing/EvidencePanel';
+import { HeroSection } from '@/components/landing/HeroSection';
+import { InsightRows } from '@/components/landing/InsightRows';
+import { ProblemStatement } from '@/components/landing/ProblemStatement';
+import { RecruiterTeaser } from '@/components/landing/RecruiterTeaser';
+import { SiteFooter } from '@/components/landing/SiteFooter';
+import { SiteNav } from '@/components/landing/SiteNav';
+import { WatchItThink } from '@/components/landing/WatchItThink';
 
 /**
  * Landing — the first step of the journey (Landing → Continue with GitHub).
  * Public marketing surface; the actual GitHub sign-in lives on `/login`
- * (auth is out of scope for this feature). Deliberately minimal.
+ * (auth is out of scope for this feature). Page composition only — section
+ * implementations live in `components/landing/*`.
  */
 export default function LandingPage() {
   return (
-    <main className="mx-auto flex min-h-svh max-w-2xl flex-col items-center justify-center gap-6 px-6 text-center">
-      <h1 className="text-display">Prove what you can actually build.</h1>
-      <p className="text-body text-muted-foreground max-w-xl">
-        Credence turns your real engineering work — your GitHub repositories and how you build them
-        — into a verified, evidence-based profile. No resume keywords. Just your work.
-      </p>
-      <div className="flex flex-col items-center gap-3">
-        <Button asChild size="lg">
-          <Link href="/login">Continue with GitHub</Link>
-        </Button>
-        <Link
-          href="/recruiter-access"
-          className="text-caption text-muted-foreground underline-offset-4 hover:underline"
-        >
-          Recruiting for a team?
-        </Link>
-      </div>
-    </main>
+    <>
+      <SiteNav />
+      <main>
+        <HeroSection />
+        <ProblemStatement />
+        <InsightRows />
+        <WatchItThink />
+        <RecruiterTeaser />
+        <EvidencePanel />
+      </main>
+      <SiteFooter />
+    </>
   );
 }

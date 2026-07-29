@@ -1,0 +1,697 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Credence AI - Engineering Analysis</title>
+<!-- Google Fonts -->
+<link href="https://fonts.googleapis.com" rel="preconnect"/>
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;600;700&amp;family=JetBrains+Mono:wght@400;500&amp;display=swap" rel="stylesheet"/>
+<!-- Material Symbols -->
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<!-- Tailwind CSS -->
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "on-secondary-fixed-variant": "#004493",
+                        "on-primary-container": "#e7e4ff",
+                        "surface-container-lowest": "#0e0d15",
+                        "secondary-fixed": "#d8e2ff",
+                        "surface-variant": "#35343c",
+                        "surface-dim": "#13131a",
+                        "on-surface": "#e4e1ec",
+                        "tertiary": "#ffb785",
+                        "on-primary": "#1c0b9f",
+                        "on-tertiary": "#502500",
+                        "tertiary-fixed": "#ffdcc6",
+                        "surface-container": "#1f1f27",
+                        "on-tertiary-container": "#ffe1cf",
+                        "on-background": "#e4e1ec",
+                        "inverse-primary": "#4f4ccd",
+                        "secondary-fixed-dim": "#adc6ff",
+                        "surface": "#13131a",
+                        "on-primary-fixed-variant": "#3631b4",
+                        "on-primary-fixed": "#0c006a",
+                        "on-surface-variant": "#c7c4d6",
+                        "on-error": "#690005",
+                        "surface-container-high": "#2a2931",
+                        "primary-fixed-dim": "#c2c1ff",
+                        "surface-container-low": "#1b1b23",
+                        "on-tertiary-fixed": "#301400",
+                        "primary": "#c2c1ff",
+                        "background": "#13131a",
+                        "error": "#ffb4ab",
+                        "surface-bright": "#393841",
+                        "tertiary-container": "#a25100",
+                        "primary-fixed": "#e2dfff",
+                        "on-error-container": "#ffdad6",
+                        "secondary": "#adc6ff",
+                        "primary-container": "#5856d6",
+                        "outline-variant": "#464554",
+                        "on-secondary-fixed": "#001a41",
+                        "on-tertiary-fixed-variant": "#713700",
+                        "inverse-surface": "#e4e1ec",
+                        "on-secondary": "#002e69",
+                        "tertiary-fixed-dim": "#ffb785",
+                        "outline": "#918f9f",
+                        "error-container": "#93000a",
+                        "surface-tint": "#c2c1ff",
+                        "on-secondary-container": "#00285c",
+                        "surface-container-highest": "#35343c",
+                        "inverse-on-surface": "#302f38",
+                        "secondary-container": "#4b8eff"
+                    },
+                    borderRadius: {
+                        DEFAULT: "0.125rem",
+                        lg: "0.25rem",
+                        xl: "0.5rem",
+                        full: "0.75rem"
+                    },
+                    spacing: {
+                        gutter: "24px",
+                        "margin-desktop": "40px",
+                        container: "1440px",
+                        "margin-mobile": "16px",
+                        unit: "4px"
+                    },
+                    fontFamily: {
+                        "headline-lg-mobile": ["Geist"],
+                        "body-md": ["Geist"],
+                        "label-sm": ["JetBrains Mono"],
+                        "display-xl": ["Geist"],
+                        "headline-lg": ["Geist"],
+                        "code-md": ["JetBrains Mono"]
+                    },
+                    fontSize: {
+                        "headline-lg-mobile": ["24px", { lineHeight: "32px", fontWeight: "600" }],
+                        "body-md": ["16px", { lineHeight: "24px", fontWeight: "400" }],
+                        "label-sm": ["13px", { lineHeight: "16px", fontWeight: "500" }],
+                        "display-xl": ["64px", { lineHeight: "72px", letterSpacing: "-0.04em", fontWeight: "700" }],
+                        "headline-lg": ["32px", { lineHeight: "40px", letterSpacing: "-0.02em", fontWeight: "600" }],
+                        "code-md": ["14px", { lineHeight: "20px", fontWeight: "400" }]
+                    }
+                }
+            }
+        }
+    </script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 300, 'GRAD' 0, 'opsz' 24;
+        }
+
+        /* Glass Card Base */
+        .glass-card {
+            background: rgba(28, 28, 31, 0.7);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid transparent;
+            background-image: linear-gradient(rgba(28, 28, 31, 1), rgba(28, 28, 31, 1)), linear-gradient(to bottom right, rgba(255,255,255,0.1), rgba(255,255,255,0.02));
+            background-origin: border-box;
+            background-clip: padding-box, border-box;
+        }
+
+        /* Button Glow */
+        .btn-glow {
+            position: relative;
+        }
+        .btn-glow::after {
+            content: '';
+            position: absolute;
+            inset: -4px;
+            background: theme('colors.primary');
+            opacity: 0;
+            filter: blur(15px);
+            border-radius: inherit;
+            transition: opacity 0.3s ease;
+            z-index: -1;
+        }
+        .btn-glow:hover::after {
+            opacity: 0.3;
+        }
+
+        /* Animations */
+        @keyframes driftUpFade {
+            0% { opacity: 0; transform: translateY(16px); }
+            10% { opacity: 1; transform: translateY(0); }
+            90% { opacity: 1; transform: translateY(-4px); }
+            100% { opacity: 0; transform: translateY(-12px); }
+        }
+        .headline-anim {
+            animation: driftUpFade 4s ease-in-out infinite;
+        }
+
+        @keyframes slideDownIn {
+            from { opacity: 0; transform: translateY(-10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .ledger-item-new {
+            animation: slideDownIn 0.5s ease-out forwards;
+        }
+
+        @keyframes pulseActive {
+            0%, 100% { opacity: 1; transform: scale(1); box-shadow: 0 0 0 0 rgba(194, 193, 255, 0.4); }
+            50% { opacity: 0.8; transform: scale(1.1); box-shadow: 0 0 0 6px rgba(194, 193, 255, 0); }
+        }
+        .timeline-pulse {
+            animation: pulseActive 2s infinite;
+        }
+        
+        @keyframes riseFade {
+            0% { opacity: 0; transform: translateY(10px); }
+            20% { opacity: 1; transform: translateY(0); }
+            80% { opacity: 1; transform: translateY(-5px); }
+            100% { opacity: 0; transform: translateY(-15px); }
+        }
+        .annotation-anim {
+            animation: riseFade 3s ease-out forwards;
+        }
+    </style>
+</head>
+<body class="bg-[#0A0B0E] text-on-surface antialiased overflow-x-hidden min-h-screen selection:bg-primary-container selection:text-on-primary-container">
+<!-- Background Shader -->
+<!-- STITCH_THREEJS_START:ANIMATION_11 class="fixed inset-0 w-full h-full z-0 opacity-40 pointer-events-none mix-blend-screen" -->
+<div class="fixed inset-0 w-full h-full z-0 opacity-40 pointer-events-none mix-blend-screen" style="display:block;">
+<script src="https://ajax.googleapis.com/ajax/libs/threejs/r125/three.min.js"></script>
+<div id="threejs-container-ANIMATION_11" style="width:100%;height:100%"></div>
+<script>
+(function() {
+  const container = document.getElementById('threejs-container-ANIMATION_11');
+  const devicePixelRatio = window.devicePixelRatio || 1;
+  const container = document.querySelector('.instrument-container');
+const canvas = document.createElement('canvas');
+container.appendChild(canvas);
+const ctx = canvas.getContext('2d');
+
+let width, height;
+let points = [];
+const scrollSpeed = 24; // px/s
+let lastTime = 0;
+let phase = 'normal'; // normal, oscillation, pause
+let phaseTimer = 0;
+let pauseDuration = 0;
+let currentX = 0;
+
+function resize() {
+    width = container.clientWidth || window.innerWidth;
+    height = container.clientHeight || 72;
+    canvas.width = width;
+    canvas.height = height;
+    currentX = width * 0.8; // Draw at 80% mark
+}
+
+window.addEventListener('resize', resize);
+resize();
+
+function update(time) {
+    const dt = (time - lastTime) / 1000;
+    lastTime = time;
+
+    if (!dt) { requestAnimationFrame(update); return; }
+
+    // Shift existing points
+    points.forEach(p => p.x -= scrollSpeed * dt);
+    points = points.filter(p => p.x > -50);
+
+    // Phase management
+    phaseTimer -= dt;
+    if (phaseTimer <= 0) {
+        const rand = Math.random();
+        if (rand < 0.7) {
+            phase = 'normal';
+            phaseTimer = 1 + Math.random() * 2;
+        } else if (rand < 0.9) {
+            phase = 'oscillation';
+            phaseTimer = 0.5 + Math.random() * 1;
+        } else {
+            phase = 'pause';
+            pauseDuration = 0.6 + Math.random() * 0.3;
+            phaseTimer = pauseDuration;
+            
+            // Trigger annotation event
+            const event = new CustomEvent('trace-annotation', { detail: { x: currentX, time: Date.now() }});
+            window.dispatchEvent(event);
+        }
+    }
+
+    // Generate new point
+    if (phase !== 'pause') {
+        let y = height / 2;
+        if (phase === 'normal') {
+            y += Math.sin(time * 0.005) * 5 + (Math.random() - 0.5) * 3;
+        } else if (phase === 'oscillation') {
+            y += Math.sin(time * 0.05) * 30 * Math.random();
+        }
+        points.push({ x: currentX, y: y, opacity: 0.65 });
+    } else {
+        // Dwelling point
+        points.push({ x: currentX, y: points[points.length-1].y, opacity: 0.65, isGlow: true });
+    }
+
+    draw();
+    requestAnimationFrame(update);
+}
+
+function draw() {
+    ctx.clearRect(0, 0, width, height);
+    
+    if (points.length < 2) return;
+
+    ctx.lineCap = 'round';
+    ctx.lineJoin = 'round';
+    ctx.lineWidth = 1.5;
+
+    for (let i = 1; i < points.length; i++) {
+        const p1 = points[i-1];
+        const p2 = points[i];
+        
+        // Fade older points
+        const ageFade = Math.max(0.15, p2.x / width);
+        ctx.strokeStyle = `rgba(255, 255, 255, ${p2.opacity * ageFade})`;
+        
+        ctx.beginPath();
+        ctx.moveTo(p1.x, p1.y);
+        ctx.lineTo(p2.x, p2.y);
+        ctx.stroke();
+
+        if (p2.isGlow) {
+            ctx.fillStyle = `rgba(255, 255, 255, ${0.4 * ageFade})`;
+            ctx.beginPath();
+            ctx.arc(p2.x, p2.y, 3, 0, Math.PI * 2);
+            ctx.fill();
+        }
+    }
+}
+
+requestAnimationFrame(update);
+})();
+</script>
+</div>
+<!-- STITCH_THREEJS_END:ANIMATION_11 -->
+<!-- TopNavBar (Desktop) -->
+<nav class="hidden md:flex justify-between items-center px-gutter py-4 w-full z-50 bg-transparent backdrop-blur-xl border-b border-white/10 fixed top-0 w-full">
+<div class="font-headline-lg text-headline-lg font-bold tracking-tighter text-on-surface">Credence AI</div>
+<div class="flex items-center gap-6">
+<div class="hidden text-on-surface-variant hover:text-primary transition-colors cursor-pointer">Explore</div>
+<div class="text-primary font-bold cursor-pointer">Analysis</div>
+<div class="text-on-surface-variant hover:text-primary transition-colors cursor-pointer">Reports</div>
+</div>
+<div class="flex items-center gap-4">
+<span class="material-symbols-outlined text-on-surface-variant hover:text-primary transition-colors scale-95 duration-200 cursor-pointer" data-icon="settings">settings</span>
+<span class="material-symbols-outlined text-on-surface-variant hover:text-primary transition-colors scale-95 duration-200 cursor-pointer" data-icon="fullscreen">fullscreen</span>
+<div class="w-8 h-8 rounded-full overflow-hidden border border-white/10">
+<img class="w-full h-full object-cover" data-alt="A professional headshot of a software engineer used as a profile avatar. High quality, soft studio lighting, muted background." src="https://lh3.googleusercontent.com/aida-public/AB6AXuDHf-NKsavZdf0rDVryo29toP9tB4zS4EbnwLzfee8MWmPyNcUDvY4HqWVq7Pm7x2US7fCNxghvKH1mk--33VbKUbnVFScWHP_loUbhqL3X6dwLepOwy0G7js20s2aJvaJbc6a0JZEdJFlG_WYDI5HByw76K12ZGDI-lhpK9jiwV9tETP57NFqbpJm_1Y-c71jF-S9nVjXMOPA1mrNPVSK6EYcz8ZtvPdIZgQYDMcCqV_yK7qYnsxhU"/>
+</div>
+</div>
+</nav>
+<!-- Main Content -->
+<main class="relative z-10 mx-auto max-w-[1040px] px-margin-mobile md:px-gutter pt-[120px] pb-[160px] flex flex-col items-center">
+<!-- Hero Section -->
+<header class="w-full text-center flex flex-col items-center">
+<div class="flex justify-between w-full max-w-[720px] items-center mb-4">
+<div class="font-label-sm text-[12px] text-on-surface/45 tracking-[0.2em]">ENGINEERING ANALYSIS · IN PROGRESS</div>
+<div class="font-label-sm text-[12px] text-primary font-medium tracking-widest" id="elapsed-time">00:00.00</div>
+</div>
+<div class="h-[80px] w-full relative overflow-hidden flex justify-center items-center">
+<h1 class="font-display-xl text-display-xl absolute text-center w-full headline-anim" id="hero-headline">Reading your repositories.</h1>
+<!-- Completion State Headline (Hidden initially) -->
+<h1 class="font-display-xl text-display-xl absolute text-center w-full opacity-0 translate-y-4 transition-all duration-1000 hidden" id="hero-complete">Your assessment is ready.</h1>
+</div>
+</header>
+<!-- The Thinking Instrument -->
+<section class="mt-12 w-full max-w-[720px] h-[96px] relative flex justify-center items-center" id="thinking-instrument">
+<!-- Dynamic Annotations Container -->
+<div class="absolute inset-0 pointer-events-none overflow-hidden z-20" id="annotations-container"></div>
+<!-- Live Drawing Trace -->
+<!-- STITCH_SHADER_START:ANIMATION_12 class="w-full h-full opacity-80 mix-blend-screen" -->
+<div class="w-full h-full opacity-80 mix-blend-screen" style="display:block;">
+<canvas id="shader-canvas-ANIMATION_12" style="display:block;width:100%;height:100%"></canvas>
+<script>
+(function() {
+  const canvas = document.getElementById('shader-canvas-ANIMATION_12');
+
+  // Sync the WebGL drawing-buffer size with the CSS-driven layout size.
+  // This fires on initial layout and whenever the element is resized.
+  function syncSize() {
+    const w = canvas.clientWidth  || 1280;
+    const h = canvas.clientHeight || 720;
+    if (canvas.width !== w || canvas.height !== h) {
+      canvas.width  = w;
+      canvas.height = h;
+    }
+  }
+  if (typeof ResizeObserver !== 'undefined') {
+    new ResizeObserver(syncSize).observe(canvas);
+  }
+  syncSize();
+
+  const gl = canvas.getContext('webgl') || canvas.getContext('experimental-webgl');
+  if (!gl) return;
+  const vs = `attribute vec2 a_position;
+varying vec2 v_texCoord;
+void main() {
+  v_texCoord = a_position * 0.5 + 0.5;
+  gl_Position = vec4(a_position, 0.0, 1.0);
+}`;
+  const fs = `precision highp float;
+varying vec2 v_texCoord;
+uniform float u_time;
+uniform vec2 u_resolution;
+
+void main() {
+    vec2 uv = v_texCoord;
+    
+    // Slow breathing radial gradient from bottom-center
+    vec2 center = vec2(0.5, -0.2);
+    float d = distance(uv, center);
+    
+    // 40s breathe cycle
+    float breathe = 0.5 + 0.5 * sin(u_time * (6.28318 / 40.0));
+    float glow = smoothstep(1.2, 0.0, d);
+    vec3 indigo = vec3(0.106, 0.118, 0.294); // #1B1E4B
+    
+    // Secondary warm glow top-right
+    vec2 tr_pos = vec2(0.9, 0.9);
+    float tr_d = distance(uv, tr_pos);
+    float tr_glow = smoothstep(0.6, 0.0, tr_d);
+    vec3 warm = vec3(0.165, 0.149, 0.125); // #2A2620
+    
+    vec3 finalColor = mix(vec3(0.039, 0.043, 0.055), indigo, glow * 0.25 * breathe);
+    finalColor += warm * tr_glow * 0.12;
+    
+    gl_FragColor = vec4(finalColor, 1.0);
+}`;
+  function cs(type, src) {
+    const s = gl.createShader(type);
+    gl.shaderSource(s, src);
+    gl.compileShader(s);
+    return s;
+  }
+  const prog = gl.createProgram();
+  gl.attachShader(prog, cs(gl.VERTEX_SHADER, vs));
+  gl.attachShader(prog, cs(gl.FRAGMENT_SHADER, fs));
+  gl.linkProgram(prog);
+  gl.useProgram(prog);
+  const buf = gl.createBuffer();
+  gl.bindBuffer(gl.ARRAY_BUFFER, buf);
+  gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([-1,-1, 1,-1, -1,1, 1,1]), gl.STATIC_DRAW);
+  const pos = gl.getAttribLocation(prog, 'a_position');
+  gl.enableVertexAttribArray(pos);
+  gl.vertexAttribPointer(pos, 2, gl.FLOAT, false, 0, 0);
+  const uTime = gl.getUniformLocation(prog, 'u_time');
+  const uRes = gl.getUniformLocation(prog, 'u_resolution');
+  const uMouse = gl.getUniformLocation(prog, 'u_mouse');
+
+  // u_mouse is in pixel coordinates matching u_resolution (ShaderToy convention).
+  // Shaders that need normalized coords should use: u_mouse / u_resolution.
+  let mouse = { x: canvas.width / 2, y: canvas.height / 2 };
+  window.addEventListener('mousemove', (event) => {
+    const rect = canvas.getBoundingClientRect();
+    if (rect.width && rect.height) {
+      const nx = (event.clientX - rect.left) / rect.width;
+      const ny = 1.0 - (event.clientY - rect.top) / rect.height;
+      mouse.x = nx * canvas.width;
+      mouse.y = ny * canvas.height;
+    }
+  });
+
+  function render(t) {
+    if (typeof ResizeObserver === 'undefined') syncSize();
+    gl.viewport(0, 0, canvas.width, canvas.height);
+    if (uTime) gl.uniform1f(uTime, t * 0.001);
+    if (uRes) gl.uniform2f(uRes, canvas.width, canvas.height);
+    if (uMouse) gl.uniform2f(uMouse, mouse.x, mouse.y);
+    gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
+    requestAnimationFrame(render);
+  }
+  render(0);
+})();
+</script>
+</div>
+<!-- STITCH_SHADER_END:ANIMATION_12 -->
+</section>
+<!-- Completion Button (Hidden initially) -->
+<div class="mt-8 hidden opacity-0 transition-opacity duration-1000" id="completion-action">
+<button class="bg-primary-container text-on-primary-container font-label-sm px-6 py-3 rounded-full flex items-center gap-2 hover:bg-primary transition-colors btn-glow border-t border-white/15">
+<span class="material-symbols-outlined text-[18px]">summarize</span>
+                View Engineering Report
+            </button>
+</div>
+<!-- Two Columns Data -->
+<div class="grid grid-cols-1 md:grid-cols-[480px_420px] gap-gutter justify-center mt-20 w-full transition-opacity duration-700" id="data-columns">
+<!-- Left: Ledger -->
+<div class="glass-card rounded-xl p-6 h-[320px] flex flex-col">
+<h2 class="font-body-md text-on-surface/70 mb-4 border-b border-white/10 pb-2">What the analysis has read</h2>
+<div class="flex flex-col gap-3 overflow-hidden flex-1 relative" id="ledger-list">
+<!-- Items added via JS -->
+<div class="flex items-start gap-3 text-on-surface opacity-80">
+<span class="material-symbols-outlined text-[16px] mt-1 text-primary/70">commit</span>
+<span class="font-code-md text-code-md">Analyzed 3,420 commits in <span class="text-secondary-fixed">core-engine</span></span>
+</div>
+</div>
+</div>
+<!-- Right: Signals -->
+<div class="glass-card rounded-xl p-6 h-[320px] flex flex-col">
+<h2 class="font-body-md text-on-surface/70 mb-4 border-b border-white/10 pb-2">Signals forming</h2>
+<div class="flex flex-col gap-5 flex-1">
+<!-- Skill 1 -->
+<div class="skill-row flex flex-col gap-1 relative" data-target="85">
+<div class="flex justify-between items-end">
+<span class="font-body-md text-on-surface skill-name opacity-30 transition-opacity duration-1000">Distributed Systems Reasoning</span>
+<span class="font-label-sm text-primary/70"><span class="citation-count">0</span> citations</span>
+</div>
+<div class="h-[1px] w-full bg-white/5 relative overflow-hidden rounded-full">
+<div class="skill-bar absolute top-0 left-0 h-full bg-primary w-0 transition-all duration-[3000ms] ease-out"></div>
+</div>
+</div>
+<!-- Skill 2 -->
+<div class="skill-row flex flex-col gap-1 relative" data-target="62">
+<div class="flex justify-between items-end">
+<span class="font-body-md text-on-surface skill-name opacity-30 transition-opacity duration-1000">Concurrency Management</span>
+<span class="font-label-sm text-tertiary/70"><span class="citation-count">0</span> citations</span>
+</div>
+<div class="h-[1px] w-full bg-white/5 relative overflow-hidden rounded-full">
+<div class="skill-bar absolute top-0 left-0 h-full bg-tertiary w-0 transition-all duration-[4000ms] ease-out"></div>
+</div>
+</div>
+<!-- Skill 3 -->
+<div class="skill-row flex flex-col gap-1 relative" data-target="91">
+<div class="flex justify-between items-end">
+<span class="font-body-md text-on-surface skill-name opacity-30 transition-opacity duration-1000">API Contract Design</span>
+<span class="font-label-sm text-secondary/70"><span class="citation-count">0</span> citations</span>
+</div>
+<div class="h-[1px] w-full bg-white/5 relative overflow-hidden rounded-full">
+<div class="skill-bar absolute top-0 left-0 h-full bg-secondary w-0 transition-all duration-[2500ms] ease-out"></div>
+</div>
+</div>
+</div>
+</div>
+</div>
+</main>
+<!-- Phase Timeline Rail -->
+<div class="fixed bottom-[100px] md:bottom-[64px] left-1/2 -translate-x-1/2 w-full max-w-[600px] px-6 z-20 transition-opacity duration-500" id="timeline-rail">
+<div class="relative flex justify-between items-center w-full">
+<!-- Track line -->
+<div class="absolute top-1/2 left-0 w-full h-[1px] bg-white/10 -translate-y-1/2 z-0"></div>
+<!-- Progress line -->
+<div class="absolute top-1/2 left-0 h-[1px] bg-primary -translate-y-1/2 z-0 transition-all duration-1000 w-[60%]"></div>
+<!-- Nodes -->
+<div class="relative z-10 flex flex-col items-center gap-2">
+<div class="w-2 h-2 rounded-full bg-primary ring-4 ring-[#0A0B0E]"></div>
+<span class="font-label-sm text-[10px] text-on-surface-variant uppercase tracking-wider absolute top-4">Repos</span>
+</div>
+<div class="relative z-10 flex flex-col items-center gap-2">
+<div class="w-2 h-2 rounded-full bg-primary ring-4 ring-[#0A0B0E]"></div>
+<span class="font-label-sm text-[10px] text-on-surface-variant uppercase tracking-wider absolute top-4">Commits</span>
+</div>
+<div class="relative z-10 flex flex-col items-center gap-2">
+<div class="w-2 h-2 rounded-full bg-primary ring-4 ring-[#0A0B0E]"></div>
+<span class="font-label-sm text-[10px] text-on-surface-variant uppercase tracking-wider absolute top-4">Collab</span>
+</div>
+<div class="relative z-10 flex flex-col items-center gap-2">
+<div class="w-3 h-3 rounded-full bg-primary ring-4 ring-[#0A0B0E] timeline-pulse"></div>
+<span class="font-label-sm text-[10px] text-primary font-bold uppercase tracking-wider absolute top-4">Synthesis</span>
+</div>
+<div class="relative z-10 flex flex-col items-center gap-2">
+<div class="w-2 h-2 rounded-full bg-surface-bright ring-4 ring-[#0A0B0E]"></div>
+<span class="font-label-sm text-[10px] text-outline uppercase tracking-wider absolute top-4">Assess</span>
+</div>
+</div>
+</div>
+<!-- BottomNavBar (Mobile) -->
+<nav class="md:hidden fixed bottom-0 left-0 w-full z-50 flex justify-around items-center px-margin-mobile pb-6 pt-4 backdrop-blur-2xl border-t border-white/5 bg-surface/30 shadow-2xl rounded-t-[24px]">
+<div class="flex flex-col items-center justify-center text-outline opacity-50 pt-2 hover:opacity-100 transition-opacity">
+<span class="material-symbols-outlined text-[24px]" data-icon="database">database</span>
+<span class="font-label-sm text-[11px] mt-1">Repos</span>
+</div>
+<div class="flex flex-col items-center justify-center text-primary border-t-2 border-primary pt-2 animate-pulse-slow">
+<span class="material-symbols-outlined text-[24px]" data-icon="psychology">psychology</span>
+<span class="font-label-sm text-[11px] mt-1">Analysis</span>
+</div>
+<div class="flex flex-col items-center justify-center text-outline opacity-50 pt-2 hover:opacity-100 transition-opacity">
+<span class="material-symbols-outlined text-[24px]" data-icon="insights">insights</span>
+<span class="font-label-sm text-[11px] mt-1">Emergence</span>
+</div>
+<div class="flex flex-col items-center justify-center text-outline opacity-50 pt-2 hover:opacity-100 transition-opacity">
+<span class="material-symbols-outlined text-[24px]" data-icon="verified">verified</span>
+<span class="font-label-sm text-[11px] mt-1">Assessment</span>
+</div>
+</nav>
+<script>
+        // Micro-interactions and Simulation Script
+        document.addEventListener('DOMContentLoaded', () => {
+            
+            // 1. Timer
+            const timeEl = document.getElementById('elapsed-time');
+            let startTime = Date.now();
+            let timerInterval = setInterval(() => {
+                let elapsed = Date.now() - startTime;
+                let mins = Math.floor(elapsed / 60000);
+                let secs = Math.floor((elapsed % 60000) / 1000);
+                let ms = Math.floor((elapsed % 1000) / 10);
+                timeEl.textContent = `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}.${ms.toString().padStart(2, '0')}`;
+            }, 47);
+
+            // 2. Headline Crossfade Sequence
+            const headlines = [
+                "Reading your repositories.",
+                "Understanding how you build.",
+                "Composing your assessment."
+            ];
+            let hlIndex = 0;
+            const hlEl = document.getElementById('hero-headline');
+            
+            // Re-trigger CSS animation
+            let hlInterval = setInterval(() => {
+                hlIndex = (hlIndex + 1) % headlines.length;
+                hlEl.style.animation = 'none';
+                hlEl.offsetHeight; // trigger reflow
+                hlEl.textContent = headlines[hlIndex];
+                hlEl.style.animation = 'driftUpFade 4s ease-in-out forwards';
+            }, 4000);
+
+            // 3. Dynamic Annotations
+            const annContainer = document.getElementById('annotations-container');
+            const fakeAnnotations = [
+                "payments-service &middot; PR #214 &middot; reviewing 47 comments",
+                "auth-gateway &middot; evaluating JWT strategy",
+                "core-engine &middot; tracing cyclic dependencies",
+                "frontend-monorepo &middot; component rendering perf",
+                "infrastructure &middot; mapping Terraform states"
+            ];
+            
+            let annInterval = setInterval(() => {
+                const el = document.createElement('div');
+                el.className = 'absolute text-on-surface-variant font-label-sm text-[11px] annotation-anim whitespace-nowrap';
+                el.innerHTML = fakeAnnotations[Math.floor(Math.random() * fakeAnnotations.length)];
+                
+                // Random position within container
+                el.style.left = `${Math.random() * 60 + 20}%`;
+                el.style.top = `${Math.random() * 40 + 30}%`;
+                
+                annContainer.appendChild(el);
+                
+                // Remove after animation completes
+                setTimeout(() => el.remove(), 3000);
+            }, 1200);
+
+            // 4. Ledger Slide Down
+            const ledgerList = document.getElementById('ledger-list');
+            const fakeLedgerItems = [
+                { icon: 'pattern', text: 'Mapped review patterns across 128 code reviews' },
+                { icon: 'account_tree', text: 'Traced architectural evolution in <span class="text-tertiary-fixed">auth-service</span>' },
+                { icon: 'speed', text: 'Analyzed latency optimization commits' },
+                { icon: 'group', text: 'Evaluated cross-team collaboration graphs' }
+            ];
+            
+            let ledgerIndex = 0;
+            let ledgerInterval = setInterval(() => {
+                if(ledgerIndex >= fakeLedgerItems.length) {
+                    clearInterval(ledgerInterval);
+                    return;
+                }
+                const item = fakeLedgerItems[ledgerIndex];
+                const el = document.createElement('div');
+                el.className = 'flex items-start gap-3 text-on-surface opacity-80 ledger-item-new';
+                el.innerHTML = `
+                    <span class="material-symbols-outlined text-[16px] mt-1 text-primary/70">${item.icon}</span>
+                    <span class="font-code-md text-code-md">${item.text}</span>
+                `;
+                ledgerList.prepend(el);
+                
+                // Keep max 4 items visible
+                if(ledgerList.children.length > 4) {
+                    ledgerList.lastElementChild.remove();
+                }
+                ledgerIndex++;
+            }, 2500);
+
+            // 5. Skills Progress
+            const skillRows = document.querySelectorAll('.skill-row');
+            setTimeout(() => {
+                skillRows.forEach((row, i) => {
+                    setTimeout(() => {
+                        const target = parseInt(row.getAttribute('data-target'));
+                        const bar = row.querySelector('.skill-bar');
+                        const countEl = row.querySelector('.citation-count');
+                        const nameEl = row.querySelector('.skill-name');
+                        
+                        bar.style.width = `${target}%`;
+                        nameEl.style.opacity = '0.85';
+                        
+                        // Count up
+                        let current = 0;
+                        let countInt = setInterval(() => {
+                            current += Math.ceil(target / 20);
+                            if(current >= target * 3) { // Arbitrary citation multiplier
+                                countEl.textContent = target * 3;
+                                clearInterval(countInt);
+                            } else {
+                                countEl.textContent = current;
+                            }
+                        }, 100);
+
+                    }, i * 800); // Stagger start
+                });
+            }, 1000);
+
+            // 6. Completion Sequence (Simulate ending after 12 seconds)
+            setTimeout(() => {
+                clearInterval(timerInterval);
+                clearInterval(hlInterval);
+                clearInterval(annInterval);
+                
+                // Clear dynamic elements
+                annContainer.innerHTML = '';
+                
+                // Switch Headlines
+                hlEl.style.display = 'none';
+                const completeEl = document.getElementById('hero-complete');
+                completeEl.classList.remove('hidden');
+                setTimeout(() => {
+                    completeEl.classList.remove('opacity-0', 'translate-y-4');
+                }, 50);
+
+                // Stop thinking instrument animation visual (fade it out slightly)
+                document.getElementById('thinking-instrument').style.opacity = '0.3';
+                
+                // Show Button
+                const btnContainer = document.getElementById('completion-action');
+                btnContainer.classList.remove('hidden');
+                setTimeout(() => {
+                    btnContainer.classList.remove('opacity-0');
+                }, 50);
+
+                // Fade out data columns slightly to emphasize completion
+                document.getElementById('data-columns').style.opacity = '0.5';
+                document.getElementById('timeline-rail').style.opacity = '0.2';
+
+            }, 12000);
+        });
+    </script>
+</body></html>

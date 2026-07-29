@@ -1,0 +1,442 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Credence AI - Precision Developer Intelligence</title>
+<!-- Material Symbols -->
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<!-- Tailwind CSS -->
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<!-- Tailwind Config injected from design system -->
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "tertiary-fixed-dim": "#ffb785",
+                        "surface-container": "#1f1f27",
+                        "surface-dim": "#13131a",
+                        "on-primary-fixed": "#0c006a",
+                        "on-primary": "#1c0b9f",
+                        "on-background": "#e4e1ec",
+                        "inverse-surface": "#e4e1ec",
+                        "tertiary": "#ffb785",
+                        "secondary-fixed": "#d8e2ff",
+                        "on-secondary": "#002e69",
+                        "background": "#0a0b0e",
+                        "primary": "#c2c1ff",
+                        "on-secondary-fixed-variant": "#004493",
+                        "primary-fixed-dim": "#c2c1ff",
+                        "outline": "#918f9f",
+                        "surface-container-lowest": "#0a0b0e",
+                        "on-tertiary-fixed": "#301400",
+                        "surface-container-high": "#2a2931",
+                        "surface": "#0a0b0e",
+                        "on-primary-container": "#e7e4ff",
+                        "tertiary-fixed": "#ffdcc6",
+                        "inverse-on-surface": "#302f38",
+                        "on-primary-fixed-variant": "#3631b4",
+                        "on-error-container": "#ffdad6",
+                        "secondary-fixed-dim": "#adc6ff",
+                        "secondary-container": "#4b8eff",
+                        "tertiary-container": "#a25100",
+                        "on-secondary-container": "#00285c",
+                        "surface-variant": "#35343c",
+                        "surface-bright": "#393841",
+                        "error": "#ffb4ab",
+                        "on-tertiary": "#502500",
+                        "on-secondary-fixed": "#001a41",
+                        "primary-container": "#5856d6",
+                        "inverse-primary": "#4f4ccd",
+                        "on-tertiary-fixed-variant": "#713700",
+                        "on-tertiary-container": "#ffe1cf",
+                        "error-container": "#93000a",
+                        "outline-variant": "#464554",
+                        "on-error": "#690005",
+                        "secondary": "#adc6ff",
+                        "on-surface": "#e4e1ec",
+                        "primary-fixed": "#e2dfff",
+                        "surface-container-low": "#1b1b23",
+                        "surface-container-highest": "#35343c",
+                        "surface-tint": "#c2c1ff",
+                        "on-surface-variant": "#c7c4d6"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.125rem",
+                        "lg": "0.25rem",
+                        "xl": "0.5rem",
+                        "full": "0.75rem"
+                    },
+                    "spacing": {
+                        "unit": "4px",
+                        "margin-desktop": "40px",
+                        "gutter": "24px",
+                        "margin-mobile": "16px",
+                        "container-max": "1440px"
+                    },
+                    "fontFamily": {
+                        "headline-lg": ["Inter Display", "sans-serif"],
+                        "label-sm": ["JetBrains Mono", "monospace"],
+                        "headline-lg-mobile": ["Inter Display", "sans-serif"],
+                        "display-xl": ["Inter Display", "sans-serif"],
+                        "body-md": ["Inter Display", "sans-serif"],
+                        "code-md": ["JetBrains Mono", "monospace"]
+                    },
+                    "fontSize": {
+                        "headline-lg": ["32px", { "lineHeight": "40px", "letterSpacing": "-0.02em", "fontWeight": "600" }],
+                        "label-sm": ["13px", { "lineHeight": "16px", "fontWeight": "500" }],
+                        "headline-lg-mobile": ["24px", { "lineHeight": "32px", "fontWeight": "600" }],
+                        "display-xl": ["64px", { "lineHeight": "72px", "letterSpacing": "-0.04em", "fontWeight": "700" }],
+                        "body-md": ["16px", { "lineHeight": "24px", "fontWeight": "400" }],
+                        "code-md": ["14px", { "lineHeight": "20px", "fontWeight": "400" }]
+                    }
+                }
+            }
+        }
+    </script>
+<style>
+        /* Base styles */
+        body {
+            background-color: #0a0b0e;
+            color: #e4e1ec; /* on-surface mapping */
+            overflow-x: hidden;
+            font-family: "Inter Display", sans-serif;
+        }
+
+        /* Glassmorphism utilities */
+        .glass-panel {
+            background-color: rgba(28, 28, 31, 0.7);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            background-image: linear-gradient(to bottom right, rgba(255,255,255,0.05), rgba(255,255,255,0.01));
+            border-top: 1px solid rgba(255,255,255,0.1);
+            border-left: 1px solid rgba(255,255,255,0.05);
+        }
+
+        /* Glow effects */
+        .glow-primary {
+            box-shadow: 0 0 15px rgba(194, 193, 255, 0.2);
+            transition: box-shadow 0.3s ease;
+        }
+        .glow-primary:hover {
+            box-shadow: 0 0 25px rgba(194, 193, 255, 0.4);
+        }
+        
+        .gradient-bg {
+            background: radial-gradient(circle at center, rgba(194, 193, 255, 0.05) 0%, rgba(10, 11, 14, 1) 70%);
+            animation: pulse-bg 10s infinite alternate;
+        }
+        
+        @keyframes pulse-bg {
+            0% { opacity: 0.8; }
+            100% { opacity: 1; }
+        }
+
+        /* Scroll Reveal Animation */
+        .reveal-element {
+            opacity: 0;
+            transform: translateY(16px);
+            transition: opacity 0.7s cubic-bezier(0.2, 0.8, 0.2, 1), transform 0.7s cubic-bezier(0.2, 0.8, 0.2, 1);
+        }
+        .reveal-element.is-revealed {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        /* Staggered reveals */
+        .delay-100 { transition-delay: 100ms; }
+        .delay-200 { transition-delay: 200ms; }
+        .delay-300 { transition-delay: 300ms; }
+        .delay-400 { transition-delay: 400ms; }
+        .delay-500 { transition-delay: 500ms; }
+        .delay-600 { transition-delay: 600ms; }
+        .delay-700 { transition-delay: 700ms; }
+
+        /* Reading Line annotations */
+        .reading-annotation {
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+        .reading-container:hover .reading-annotation {
+            opacity: 1;
+        }
+        
+        /* Grid background pattern for technical feel */
+        .bg-grid-pattern {
+            background-image: linear-gradient(to right, rgba(255,255,255,0.03) 1px, transparent 1px),
+                              linear-gradient(to bottom, rgba(255,255,255,0.03) 1px, transparent 1px);
+            background-size: 24px 24px;
+        }
+    </style>
+</head>
+<body class="antialiased selection:bg-primary-container selection:text-on-primary-container relative gradient-bg">
+<!-- Atmospheric Shader Background -->
+<div class="fixed inset-0 z-[-1] pointer-events-none opacity-40">
+{{DATA:ANIMATION:ANIMATION_16}}
+</div>
+<!-- Navigation Shell (from JSON) -->
+<nav class="fixed top-0 w-full z-50 bg-background/70 dark:bg-background/70 backdrop-blur-xl border-b border-white/10 transition-all duration-300" id="main-nav">
+<div class="flex justify-between items-center px-margin-mobile md:px-margin-desktop h-16 w-full max-w-container-max mx-auto">
+<!-- Brand -->
+<a class="font-headline-lg text-headline-lg-mobile md:text-headline-lg font-bold text-on-surface dark:text-on-surface flex items-center gap-1" href="#">
+                Credence AI<span class="text-primary w-2 h-2 rounded-full bg-primary inline-block mb-1"></span>
+</a>
+<!-- Center Links -->
+<div class="hidden md:flex items-center space-x-8"><a class="text-on-surface-variant font-body-md text-body-md hover:text-primary transition-colors duration-200" href="#">Developer Intelligence</a><div class="flex items-center gap-4 group relative"><a class="text-on-surface-variant font-body-md text-body-md hover:text-primary transition-colors duration-200" href="{{DATA:SCREEN:SCREEN_2}}">Recruiter Intelligence</a><span class="text-[10px] px-1.5 py-0.5 rounded border border-outline-variant/30 text-outline-variant uppercase tracking-tighter">Coming Soon</span><div class="absolute bottom-full left-0 mb-2 hidden group-hover:block bg-surface-container-high text-on-surface text-[12px] px-2 py-1 rounded shadow-xl whitespace-nowrap pointer-events-none">Invitation-only preview</div></div><a class="text-on-surface-variant font-body-md text-body-md hover:text-primary transition-colors duration-200" href="#">How it Works</a><a class="text-on-surface-variant font-body-md text-body-md hover:text-primary transition-colors duration-200" href="#">GitHub →</a></div>
+<!-- Actions -->
+<div class="flex items-center space-x-6">
+<a class="hidden md:block text-on-surface-variant font-body-md text-body-md hover:text-primary transition-colors duration-200" href="#">Sign In</a>
+<a class="bg-primary/10 border border-primary/20 text-primary px-4 py-1.5 rounded-full font-label-sm text-label-sm hover:bg-primary hover:text-on-primary transition-all duration-300 glow-primary backdrop-blur-md" href="#">
+                    Analyze My Engineering
+                </a>
+</div>
+</div>
+</nav>
+<!-- Main Content -->
+<main class="w-full">
+<!-- HERO SECTION -->
+<section class="relative min-h-screen flex flex-col items-center justify-center px-margin-mobile md:px-margin-desktop pt-24 pb-12 overflow-hidden">
+<div class="w-full max-w-5xl mx-auto text-center z-10 relative flex flex-col items-center">
+<h1 class="font-display-xl text-headline-lg-mobile md:text-display-xl text-on-surface mb-6 reveal-element delay-100 tracking-tight">
+                    Ten years of engineering lives in your GitHub.<br class="hidden md:block"/>
+<span class="text-on-surface-variant">Nothing has ever read it.</span>
+</h1>
+<p class="font-body-md text-body-md md:text-lg text-outline max-w-2xl mx-auto mb-10 reveal-element delay-200">
+                    Credence AI parses every commit, PR, and architectural decision to construct a living intelligence graph of your engineering reality.
+                </p>
+<a class="bg-primary text-on-primary-fixed px-8 py-4 rounded-full font-label-sm text-label-sm font-bold flex items-center gap-2 hover:-translate-y-1 transition-transform duration-300 glow-primary mb-12 reveal-element delay-300 mx-auto" href="#">
+                    Analyze My Engineering
+                    <span class="material-symbols-outlined text-sm">arrow_forward</span>
+</a><p class="font-body-md text-sm text-outline-variant reveal-element delay-400 mt-[-32px] mb-12">Developer Intelligence is available today. Recruiter Intelligence launches soon.</p>
+<!-- Reading Line Animation Integration -->
+<div class="w-full h-[35vh] relative reveal-element delay-300 reading-container group mx-auto flex items-center justify-center overflow-hidden">
+{{DATA:ANIMATION:ANIMATION_15}}
+</div>
+</div>
+</section>
+<!-- SECTION 1 (PROBLEM) -->
+<section class="w-full max-w-3xl mx-auto px-margin-mobile md:px-margin-desktop mt-[50px] mb-[150px]">
+<div class="text-center font-headline-lg text-headline-lg-mobile md:text-headline-lg text-on-surface leading-snug mb-8">
+<div class="reveal-element">Every architecture decision.</div>
+<div class="reveal-element delay-100">Every review.</div>
+<div class="reveal-element delay-200">Every late-night fix.</div>
+<div class="reveal-element delay-300">Every rollback.</div>
+<div class="reveal-element delay-400">Every difficult migration.</div>
+<div class="reveal-element delay-500 text-outline-variant mt-4">GitHub remembers all of it.</div>
+<div class="reveal-element delay-600 text-outline-variant">Nothing understands it.</div>
+</div>
+<div class="text-center reveal-element delay-700 mt-12">
+<div class="font-label-sm text-label-sm text-primary bg-[#050505] border border-outline-variant/30 py-3 px-6 rounded-lg inline-block shadow-inner">
+                    &gt; Select * from engineering_impact where metric = 'truth'; <span class="animate-pulse">_</span>
+</div>
+</div>
+</section>
+<!-- SECTION 2 (INSIGHT) -->
+<section class="w-full max-w-container-max mx-auto px-margin-mobile md:px-margin-desktop mb-[150px]">
+<div class="mb-12 reveal-element">
+<span class="font-label-sm text-label-sm text-primary tracking-widest uppercase block mb-4 border-b border-primary/20 pb-2 max-w-[120px]">The Insight</span>
+</div>
+<div class="flex flex-col border-t border-outline-variant/30">
+<!-- Row 1 -->
+<div class="group flex flex-col md:flex-row justify-between items-start md:items-center py-8 border-b border-outline-variant/30 hover:bg-surface-container/40 transition-colors duration-300 px-4 -mx-4 reveal-element">
+<div class="flex items-center gap-6 mb-2 md:mb-0">
+<span class="font-label-sm text-label-sm text-outline-variant">01</span>
+<h3 class="font-headline-lg text-headline-lg-mobile md:text-headline-lg text-on-surface group-hover:text-primary transition-all duration-300 transform group-hover:translate-x-2">Commits</h3>
+</div>
+<p class="font-body-md text-body-md text-on-surface-variant md:max-w-md text-left md:text-right group-hover:text-on-surface transition-colors">
+                        We don't count them. We read the narrative of problem-solving encoded within them.
+                    </p>
+</div>
+<!-- Row 2 -->
+<div class="group flex flex-col md:flex-row justify-between items-start md:items-center py-8 border-b border-outline-variant/30 hover:bg-surface-container/40 transition-colors duration-300 px-4 -mx-4 reveal-element delay-100">
+<div class="flex items-center gap-6 mb-2 md:mb-0">
+<span class="font-label-sm text-label-sm text-outline-variant">02</span>
+<h3 class="font-headline-lg text-headline-lg-mobile md:text-headline-lg text-on-surface group-hover:text-primary transition-all duration-300 transform group-hover:translate-x-2">Reviews</h3>
+</div>
+<p class="font-body-md text-body-md text-on-surface-variant md:max-w-md text-left md:text-right group-hover:text-on-surface transition-colors">
+                        Identifying mentorship patterns and architectural guardianship across your team.
+                    </p>
+</div>
+<!-- Row 3 -->
+<div class="group flex flex-col md:flex-row justify-between items-start md:items-center py-8 border-b border-outline-variant/30 hover:bg-surface-container/40 transition-colors duration-300 px-4 -mx-4 reveal-element delay-200">
+<div class="flex items-center gap-6 mb-2 md:mb-0">
+<span class="font-label-sm text-label-sm text-outline-variant">03</span>
+<h3 class="font-headline-lg text-headline-lg-mobile md:text-headline-lg text-on-surface group-hover:text-primary transition-all duration-300 transform group-hover:translate-x-2">Architecture</h3>
+</div>
+<p class="font-body-md text-body-md text-on-surface-variant md:max-w-md text-left md:text-right group-hover:text-on-surface transition-colors">
+                        Mapping the evolution of systems from initial draft to mature infrastructure.
+                    </p>
+</div>
+</div>
+</section>
+<!-- SECTION 3 (INTELLIGENCE) -->
+<section class="w-full relative py-[120px] overflow-hidden min-h-screen flex flex-col justify-center">
+<!-- Deep Indigo Floor -->
+<div class="absolute inset-0 bg-primary/5 bg-grid-pattern border-y border-primary/10 z-0 opacity-50"></div>
+<div class="relative z-10 max-w-container-max mx-auto px-margin-mobile md:px-margin-desktop w-full">
+<div class="text-center mb-16 reveal-element">
+<h2 class="font-display-xl text-headline-lg-mobile md:text-[48px] text-on-surface font-bold tracking-tight">Watch it think.</h2>
+</div>
+<div class="grid grid-cols-1 lg:grid-cols-3 gap-12 items-center min-h-[500px]">
+<!-- Evidence Ledger -->
+<div class="flex flex-col gap-4 font-code-md text-code-md text-outline-variant reveal-element">
+<div class="pb-2 border-b border-outline-variant/20 flex justify-between">
+<span>SHA-256</span> <span>Confidence</span>
+</div>
+<div class="flex justify-between hover:text-primary transition-colors cursor-crosshair">
+<span>a1b2c3d</span> <span class="text-primary">99.8%</span>
+</div>
+<div class="flex justify-between hover:text-primary transition-colors cursor-crosshair">
+<span>e4f5g6h</span> <span class="text-primary">97.2%</span>
+</div>
+<div class="flex justify-between hover:text-primary transition-colors cursor-crosshair">
+<span>i7j8k9l</span> <span class="text-secondary">85.4%</span>
+</div>
+</div>
+<!-- Central Tracing Expanding -->
+<div class="h-96 relative flex items-center justify-center reveal-element delay-100 group">
+</div>
+<!-- Signals Forming -->
+<div class="flex flex-col gap-6 reveal-element delay-200">
+<div>
+<div class="font-label-sm text-label-sm text-primary mb-1">Signal 01</div>
+<div class="font-body-md text-body-md text-on-surface border-l-2 border-primary pl-4 py-1 bg-gradient-to-r from-primary/10 to-transparent">
+                                Detected complex refactor in core authentication module.
+                            </div>
+</div>
+<div>
+<div class="font-label-sm text-label-sm text-secondary mb-1">Signal 02</div>
+<div class="font-body-md text-body-md text-on-surface-variant border-l-2 border-secondary pl-4 py-1">
+                                High correlation between author and performance optimizations.
+                            </div>
+</div>
+</div>
+</div>
+<div class="mt-24 max-w-3xl mx-auto text-center reveal-element delay-300">
+<p class="font-body-md text-body-md md:text-lg text-outline-variant border-t border-outline-variant/20 pt-8">
+                    Every assessment is backed by evidence. No hidden scores. Every conclusion can be traced back to repositories, pull requests, reviews, commits, and engineering decisions.
+                </p>
+</div>
+</div>
+</section>
+<!-- SECTION 4 (GLIMPSE) -->
+<section class="w-full max-w-container-max mx-auto px-margin-mobile md:px-margin-desktop py-[150px] border-t border-outline-variant/10" id="recruiter">
+<div class="max-w-3xl mb-16 reveal-element">
+<span class="font-label-sm text-label-sm text-outline-variant tracking-widest uppercase block mb-6">FOR HIRING TEAMS</span>
+<h2 class="font-display-xl text-headline-lg-mobile md:text-[48px] text-on-surface mb-8 leading-tight">Engineering Intelligence for Hiring Teams</h2>
+<p class="font-body-md text-body-md md:text-lg text-on-surface-variant leading-relaxed">
+            We're building Recruiter Intelligence to help engineering leaders evaluate demonstrated engineering capability instead of relying on résumé keywords, GitHub stars, or commit counts. The same evidence-backed reasoning that powers Developer Intelligence will soon help hiring teams understand how engineers think, collaborate, and evolve.
+        </p>
+</div>
+<div class="grid grid-cols-1 md:grid-cols-3 gap-8 mb-16">
+<div class="p-8 border border-outline-variant/20 rounded-xl reveal-element">
+<span class="material-symbols-outlined text-outline-variant mb-6">verified</span>
+<h4 class="font-headline-lg text-xl text-on-surface mb-3">Evidence-backed Candidate Assessment</h4>
+<p class="font-body-md text-sm text-on-surface-variant mb-6">Evaluate demonstrated engineering behaviour through traceable evidence.</p><p class="text-[11px] text-outline-variant/50 mb-4 italic">Currently in design partner testing.</p>
+<span class="text-[10px] px-2 py-0.5 rounded-full border border-outline-variant/30 text-outline-variant uppercase tracking-widest">FOR HIRING TEAMS</span>
+</div>
+<div class="p-8 border border-outline-variant/20 rounded-xl reveal-element delay-100">
+<span class="material-symbols-outlined text-outline-variant mb-6">compare_arrows</span>
+<h4 class="font-headline-lg text-xl text-on-surface mb-3">Candidate Comparison</h4>
+<p class="font-body-md text-sm text-on-surface-variant mb-6">Compare engineering patterns, ownership, and technical strengths across multiple candidates.</p><p class="text-[11px] text-outline-variant/50 mb-4 italic">Evaluating multi-repo comparison patterns.</p>
+<span class="text-[10px] px-2 py-0.5 rounded-full border border-outline-variant/30 text-outline-variant uppercase tracking-widest">FOR HIRING TEAMS</span>
+</div>
+<div class="p-8 border border-outline-variant/20 rounded-xl reveal-element delay-200">
+<span class="material-symbols-outlined text-outline-variant mb-6">groups</span>
+<h4 class="font-headline-lg text-xl text-on-surface mb-3">Team Intelligence</h4>
+<p class="font-body-md text-sm text-on-surface-variant mb-6">Understand how a candidate complements an existing engineering organization.</p><p class="text-[11px] text-outline-variant/50 mb-4 italic">Developing organizational fit signals.</p>
+<span class="text-[10px] px-2 py-0.5 rounded-full border border-primary/30 text-primary uppercase tracking-widest">FOR HIRING TEAMS</span>
+</div>
+</div>
+<div class="flex flex-col md:flex-row items-center justify-between gap-8 p-8 bg-surface-container-low/30 rounded-2xl border border-outline-variant/10 reveal-element delay-300">
+<p class="font-body-md text-sm text-on-surface-variant max-w-xl">
+            Currently onboarding design partners. Recruiter Intelligence is being developed alongside engineering leaders and early partner organizations. Join us when early access expands.
+        </p>
+<a class="px-6 py-3 rounded-lg border border-outline-variant hover:bg-surface-container-high transition-colors font-label-sm text-label-sm text-on-surface whitespace-nowrap" href="{{DATA:SCREEN:SCREEN_2}}">Explore Recruiter Intelligence</a>
+</div>
+</section><section class="w-full max-w-4xl mx-auto px-margin-mobile md:px-margin-desktop py-[150px] flex flex-col items-center">
+<div class="glass-panel w-full rounded-2xl p-8 md:p-12 shadow-2xl relative overflow-hidden reveal-element group">
+<!-- Decorative top border glow -->
+<div class="absolute top-0 left-0 w-full h-[1px] bg-gradient-to-r from-transparent via-primary to-transparent opacity-50"></div>
+<div class="flex items-center justify-between mb-8 border-b border-outline-variant/20 pb-4">
+<div class="flex items-center gap-3">
+<span class="material-symbols-outlined text-primary text-xl">troubleshoot</span>
+<span class="font-label-sm text-label-sm text-on-surface-variant tracking-wider uppercase">Extracted Claim</span>
+</div>
+<div class="font-code-md text-[12px] text-outline-variant text-right hidden md:block">
+                        Evidence Base: 427 commits, 81 pull requests, 3 repositories, 4 years
+                    </div>
+</div>
+<h3 class="font-headline-lg text-headline-lg-mobile md:text-headline-lg text-on-surface mb-6 leading-tight">
+                    "Strongest Engineering Trait: <span class="text-primary hover:bg-primary/20 px-2 rounded cursor-help transition-colors border-b border-primary/50 border-dashed">Distributed Systems Thinking</span>"
+                </h3>
+<p class="font-body-md text-body-md text-outline-variant mb-10">
+                    Based on analysis of 14 separate incident response commits across 3 distinct microservices over an 18-month period.
+                </p>
+<div class="flex justify-start">
+<a class="bg-primary text-on-primary-fixed px-8 py-4 rounded-full font-label-sm text-label-sm font-bold flex items-center gap-2 hover:-translate-y-1 transition-transform duration-300 glow-primary" href="#">
+                        Analyze my GitHub
+                        <span class="material-symbols-outlined text-sm">arrow_forward</span>
+</a>
+</div>
+</div>
+</section>
+</main>
+<!-- Footer Shell (from JSON) -->
+<section class="w-full max-w-container-max mx-auto px-margin-mobile md:px-margin-desktop py-[150px] border-t border-outline-variant/10 reveal-element"><div class="grid grid-cols-1 md:grid-cols-3 gap-12"><div class="md:col-span-1"><h2 class="font-display-xl text-headline-lg-mobile md:text-headline-lg text-on-surface leading-tight">Who is Credence AI for?</h2></div><div class="md:col-span-2 flex flex-col"><div class="flex flex-col md:flex-row justify-between items-start md:items-center py-8 border-b border-outline-variant/20 gap-4"><span class="font-headline-lg text-xl text-on-surface w-32">Developers</span><p class="font-body-md text-on-surface-variant flex-1">Generate an evidence-backed Developer Intelligence Report.</p><span class="font-label-sm text-xs text-outline-variant/50 uppercase tracking-widest">Available Today</span></div><div class="flex flex-col md:flex-row justify-between items-start md:items-center py-8 border-b border-outline-variant/20 gap-4"><span class="font-headline-lg text-xl text-on-surface w-32">Hiring Teams</span><p class="font-body-md text-on-surface-variant flex-1">Evaluate demonstrated engineering capability through traceable evidence.</p><span class="font-label-sm text-xs text-outline-variant/50 uppercase tracking-widest">Coming Soon</span></div></div></div></section><footer class="w-full py-12 border-t border-outline-variant bg-surface-container-lowest dark:bg-surface-container-lowest text-on-surface">
+<div class="flex flex-col items-center justify-center px-margin-mobile md:px-margin-desktop max-w-container-max mx-auto text-center gap-4"><div class="grid grid-cols-1 md:grid-cols-3 gap-12 text-left w-full mb-16 pb-16 border-b border-outline-variant/10">
+<div class="flex flex-col gap-4">
+<span class="font-label-sm text-[11px] text-outline-variant uppercase tracking-widest">Developer Intelligence</span>
+<a class="font-body-md text-sm text-on-surface-variant hover:text-primary transition-colors" href="#">Available Now</a>
+</div>
+<div class="flex flex-col gap-4">
+<span class="font-label-sm text-[11px] text-outline-variant uppercase tracking-widest">Recruiter Intelligence</span>
+<a class="font-body-md text-sm text-on-surface-variant hover:text-primary transition-colors" href="{{DATA:SCREEN:SCREEN_2}}">Coming Soon</a>
+</div>
+<div class="flex flex-col gap-4"><span class="font-label-sm text-[11px] text-outline-variant uppercase tracking-widest">Platform</span><a class="font-body-md text-sm text-on-surface-variant hover:text-primary transition-colors" href="#">Evidence Engine</a><a class="font-body-md text-sm text-on-surface-variant hover:text-primary transition-colors" href="#">API (Soon)</a></div>
+</div>
+<div class="font-body-md text-body-md text-on-surface-variant">
+                    Credence AI • Engineering Intelligence • Built on Evidence.
+                </div>
+<a class="font-label-sm text-label-sm text-on-surface opacity-30 hover:opacity-100 transition-opacity" href="#">GitHub</a>
+</div>
+</footer>
+<!-- Interactive Scripts -->
+<script>
+        // Scroll Reveal Logic (40% threshold)
+        document.addEventListener("DOMContentLoaded", () => {
+            const observerOptions = {
+                root: null,
+                rootMargin: '0px',
+                threshold: 0.4 // 40% viewport threshold
+            };
+
+            const observer = new IntersectionObserver((entries, observer) => {
+                entries.forEach(entry => {
+                    if (entry.isIntersecting) {
+                        entry.target.classList.add('is-revealed');
+                        observer.unobserve(entry.target);
+                    }
+                });
+            }, observerOptions);
+
+            const revealElements = document.querySelectorAll('.reveal-element');
+            revealElements.forEach(el => observer.observe(el));
+
+            // Navbar Glass effect on scroll
+            const nav = document.getElementById('main-nav');
+            window.addEventListener('scroll', () => {
+                if (window.scrollY > 20) {
+                    nav.classList.add('shadow-lg', 'bg-background/90');
+                    nav.classList.remove('bg-background/70');
+                } else {
+                    nav.classList.remove('shadow-lg', 'bg-background/90');
+                    nav.classList.add('bg-background/70');
+                }
+            });
+        });
+    </script>
+</body></html>
