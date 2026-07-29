@@ -1,0 +1,235 @@
+<!DOCTYPE html><html class="dark" lang="en"><head>
+<meta charset="utf-8">
+<meta content="width=device-width, initial-scale=1.0" name="viewport">
+<title>Sign in to Credence AI</title>
+<link href="https://fonts.googleapis.com" rel="preconnect">
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect">
+<link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&amp;family=JetBrains+Mono:wght@400;500&amp;family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet">
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script id="tailwind-config">
+        tailwind.config = {
+          darkMode: "class",
+          theme: {
+            extend: {
+              "colors": {
+                      "primary-fixed": "#e2dfff",
+                      "on-secondary-fixed": "#001a41",
+                      "error": "#ffb4ab",
+                      "tertiary": "#ffb785",
+                      "outline": "#918f9f",
+                      "on-error": "#690005",
+                      "on-surface-variant": "#c7c4d6",
+                      "inverse-on-surface": "#302f38",
+                      "tertiary-fixed-dim": "#ffb785",
+                      "on-tertiary-fixed": "#301400",
+                      "surface-container-high": "#2a2931",
+                      "surface-variant": "#35343c",
+                      "surface-container": "#1f1f27",
+                      "on-primary-fixed": "#0c006a",
+                      "surface-container-highest": "#35343c",
+                      "surface": "#13131a",
+                      "secondary": "#adc6ff",
+                      "secondary-fixed-dim": "#adc6ff",
+                      "on-tertiary": "#502500",
+                      "surface-dim": "#13131a",
+                      "tertiary-fixed": "#ffdcc6",
+                      "surface-bright": "#393841",
+                      "on-primary": "#1c0b9f",
+                      "surface-container-lowest": "#0e0d15",
+                      "error-container": "#93000a",
+                      "inverse-primary": "#4f4ccd",
+                      "on-secondary": "#002e69",
+                      "on-primary-container": "#e7e4ff",
+                      "inverse-surface": "#e4e1ec",
+                      "surface-container-low": "#1b1b23",
+                      "on-tertiary-container": "#ffe1cf",
+                      "on-primary-fixed-variant": "#3631b4",
+                      "on-error-container": "#ffdad6",
+                      "on-background": "#e4e1ec",
+                      "background": "#13131a",
+                      "secondary-container": "#4b8eff",
+                      "on-surface": "#e4e1ec",
+                      "on-tertiary-fixed-variant": "#713700",
+                      "on-secondary-container": "#00285c",
+                      "surface-tint": "#c2c1ff",
+                      "primary": "#c2c1ff",
+                      "primary-container": "#5856d6",
+                      "tertiary-container": "#a25100",
+                      "secondary-fixed": "#d8e2ff",
+                      "on-secondary-fixed-variant": "#004493",
+                      "primary-fixed-dim": "#c2c1ff",
+                      "outline-variant": "#464554"
+              },
+              "borderRadius": {
+                      "DEFAULT": "0.125rem",
+                      "lg": "0.25rem",
+                      "xl": "0.5rem",
+                      "full": "0.75rem"
+              },
+              "spacing": {
+                      "unit": "4px",
+                      "margin-mobile": "16px",
+                      "margin-desktop": "40px",
+                      "gutter": "24px",
+                      "container-max": "1440px"
+              },
+              "fontFamily": {
+                      "code-md": [
+                              "JetBrains Mono"
+                      ],
+                      "headline-lg-mobile": [
+                              "Geist"
+                      ],
+                      "headline-lg": [
+                              "Geist"
+                      ],
+                      "display-xl": [
+                              "Geist"
+                      ],
+                      "label-sm": [
+                              "JetBrains Mono"
+                      ],
+                      "body-md": [
+                              "Geist"
+                      ]
+              },
+              "fontSize": {
+                      "code-md": [
+                              "14px",
+                              {
+                                      "lineHeight": "20px",
+                                      "fontWeight": "400"
+                              }
+                      ],
+                      "headline-lg-mobile": [
+                              "24px",
+                              {
+                                      "lineHeight": "32px",
+                                      "fontWeight": "600"
+                              }
+                      ],
+                      "headline-lg": [
+                              "32px",
+                              {
+                                      "lineHeight": "40px",
+                                      "letterSpacing": "-0.02em",
+                                      "fontWeight": "600"
+                              }
+                      ],
+                      "display-xl": [
+                              "64px",
+                              {
+                                      "lineHeight": "72px",
+                                      "letterSpacing": "-0.04em",
+                                      "fontWeight": "700"
+                              }
+                      ],
+                      "label-sm": [
+                              "13px",
+                              {
+                                      "lineHeight": "16px",
+                                      "fontWeight": "500"
+                              }
+                      ],
+                      "body-md": [
+                              "16px",
+                              {
+                                      "lineHeight": "24px",
+                                      "fontWeight": "400"
+                              }
+                      ]
+              }
+      },
+          },
+        }
+      </script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        
+        .glass-panel {
+            background: rgba(28, 28, 31, 0.7);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            border-image: linear-gradient(to bottom right, rgba(255, 255, 255, 0.1), rgba(255, 255, 255, 0.02)) 1;
+        }
+
+        .glow-button {
+            box-shadow: inset 0 1px 0 0 rgba(255, 255, 255, 0.15), 0 0 15px 0 rgba(194, 193, 255, 0.2);
+            transition: all 0.2s ease;
+        }
+        
+        .glow-button:hover {
+            box-shadow: inset 0 1px 0 0 rgba(255, 255, 255, 0.2), 0 0 20px 0 rgba(194, 193, 255, 0.3);
+            transform: translateY(-1px);
+        }
+
+        .ambient-bg {
+            background: radial-gradient(circle at 50% -20%, rgba(194, 193, 255, 0.08) 0%, rgba(19, 19, 26, 1) 50%);
+        }
+    </style>
+</head>
+<body class="bg-surface text-on-surface min-h-screen flex items-center justify-center font-body-md ambient-bg p-margin-mobile md:p-margin-desktop antialiased">
+<!-- Auth Container -->
+<main class="w-full flex flex-col gap-8 relative z-10 max-w-[500px]">
+<!-- Brand / Badge -->
+<div class="flex justify-center">
+<div class="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-surface-container border border-outline-variant/30 font-label-sm text-label-sm text-on-surface-variant">
+<span class="material-symbols-outlined text-[14px]">memory</span>
+<span class="">Credence AI</span>
+</div>
+</div>
+<!-- Auth Card -->
+<div class="glass-panel rounded-xl overflow-hidden flex flex-col">
+<!-- Primary Auth Section -->
+<div class="p-8 flex flex-col gap-6">
+<!-- Header -->
+<div class="flex flex-col gap-3 text-center">
+<div class="flex justify-center mb-2"><span class="material-symbols-outlined text-primary text-[32px]">adjust</span></div><h1 class="font-headline-lg-mobile md:font-headline-lg text-headline-lg-mobile md:text-headline-lg text-on-surface">
+                        Sign in to Credence AI
+                    </h1>
+<p class="font-body-md text-body-md text-on-surface-variant">We request read-only GitHub access needed to analyze your engineering work.</p>
+</div>
+<!-- Primary CTA -->
+<div class="flex flex-col gap-4 mt-2">
+<button class="w-full flex items-center justify-center gap-3 bg-[#24292f] text-white py-3.5 px-6 rounded-lg font-body-md text-body-md font-semibold transition-all hover:bg-[#1b1f23]">
+<svg aria-hidden="true" class="w-5 h-5 fill-current" viewBox="0 0 24 24">
+<path d="M12 2C6.477 2 2 6.484 2 12.017c0 4.425 2.865 8.18 6.839 9.504.5.092.682-.217.682-.483 0-.237-.008-.868-.013-1.703-2.782.605-3.369-1.343-3.369-1.343-.454-1.158-1.11-1.466-1.11-1.466-.908-.62.069-.608.069-.608 1.003.07 1.531 1.032 1.531 1.032.892 1.53 2.341 1.088 2.91.832.092-.647.35-1.088.636-1.338-2.22-.253-4.555-1.113-4.555-4.951 0-1.093.39-1.988 1.029-2.688-.103-.253-.446-1.272.098-2.65 0 0 .84-.27 2.75 1.026A9.564 9.564 0 0112 6.844c.85.004 1.705.115 2.504.337 1.909-1.296 2.747-1.027 2.747-1.027.546 1.379.202 2.398.1 2.651.64.7 1.028 1.595 1.028 2.688 0 3.848-2.339 4.695-4.566 4.943.359.309.678.92.678 1.855 0 1.338-.012 2.419-.012 2.747 0 .268.18.58.688.482A10.019 10.019 0 0022 12.017C22 6.484 17.522 2 12 2z"></path>
+</svg>
+                        Continue with GitHub
+                    </button>
+<p class="text-center font-label-sm text-label-sm text-outline flex items-center justify-center gap-1.5">
+<span class="material-symbols-outlined text-[14px]">lock</span>
+                        We never modify your repositories.
+                    </p>
+</div>
+</div>
+<!-- Divider -->
+<div class="h-px w-full bg-outline-variant/20"></div>
+<!-- Secondary Recruiting Section -->
+<div class="p-8 bg-surface-container-low/30 flex flex-col items-center gap-4 text-center">
+<div class="flex flex-col gap-1">
+<h2 class="font-body-md text-body-md font-semibold text-on-surface">Recruiting for a team?</h2>
+<p class="font-label-sm text-label-sm text-on-surface-variant">Recruiter Intelligence is currently invitation-only.</p>
+</div>
+<button class="px-5 py-2.5 rounded-lg border border-outline-variant/40 hover:bg-surface-container-high/50 text-on-surface font-body-md text-body-md transition-colors w-full sm:w-auto">Learn about Recruiter Access</button>
+</div>
+</div>
+</main>
+<!-- Subtle Background Elements for 'Evidence Trace' feel -->
+<div class="fixed inset-0 pointer-events-none z-0 opacity-10 overflow-hidden">
+<svg height="100%" width="100%" xmlns="http://www.w3.org/2000/svg">
+<defs>
+<pattern height="40" id="grid" patternUnits="userSpaceOnUse" width="40">
+<path d="M 40 0 L 0 0 0 40" fill="none" stroke="rgba(194, 193, 255, 0.1)" stroke-width="0.5"></path>
+</pattern>
+</defs>
+<rect fill="url(#grid)" height="100%" width="100%"></rect>
+</svg>
+</div>
+
+
+</body></html>
