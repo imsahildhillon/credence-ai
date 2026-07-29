@@ -51,7 +51,7 @@ export default async function AnalysisPage() {
 
   if (!analysis) {
     return (
-      <div className="mx-auto flex w-full max-w-xl flex-col gap-8">
+      <div className="mx-auto flex w-full max-w-xl flex-col gap-6">
         <EmptyState
           title="No analysis yet"
           description="Connect your GitHub work and choose repositories to build your engineering profile."
@@ -74,7 +74,7 @@ export default async function AnalysisPage() {
     const classification = await classifyAnalysisFailure(analysis.id);
 
     return (
-      <div className="mx-auto flex w-full max-w-xl flex-col gap-8">
+      <div className="mx-auto flex w-full max-w-xl flex-col gap-6">
         <ErrorState
           title="We couldn't finish your analysis"
           description={
@@ -112,7 +112,7 @@ export default async function AnalysisPage() {
     // automatically. Starting again enqueues a fresh run; the old one stays
     // a truthful, terminal record rather than silently vanishing.
     return (
-      <div className="mx-auto flex w-full max-w-xl flex-col gap-8">
+      <div className="mx-auto flex w-full max-w-xl flex-col gap-6">
         <ErrorState
           title="This analysis was interrupted"
           description="The worker running this analysis restarted before it finished. Nothing was lost — start it again to pick up where a fresh run would begin."
@@ -131,7 +131,7 @@ export default async function AnalysisPage() {
   const stages = deriveAnalysisStages(progress);
 
   return (
-    <div className="mx-auto flex w-full max-w-xl flex-col gap-8">
+    <div className="mx-auto flex w-full max-w-xl flex-col gap-6">
       <AnalysisPipeline
         analysisId={analysis.id}
         initialStatus={analysis.status}
@@ -146,10 +146,10 @@ export default async function AnalysisPage() {
 
       {snapshot.length > 0 ? (
         <details className="group">
-          <summary className="text-caption cursor-pointer select-none">
+          <summary className="text-caption hover:text-foreground cursor-pointer select-none transition-colors">
             View repositories included in this run
           </summary>
-          <ul className="mt-2 flex flex-col divide-y rounded-lg border">
+          <ul className="border-border/60 divide-border/60 mt-2 flex flex-col divide-y rounded-lg border">
             {snapshot.map((item) => (
               <li
                 key={item.repositoryId}

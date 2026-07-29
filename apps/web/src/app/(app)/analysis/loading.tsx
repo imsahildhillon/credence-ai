@@ -8,13 +8,13 @@ const STAGE_COUNT = 6;
  */
 export default function Loading() {
   return (
-    <div className="mx-auto flex w-full max-w-xl flex-col gap-8" aria-hidden="true">
+    <div className="mx-auto flex w-full max-w-xl flex-col gap-6" aria-hidden="true">
       <div className="flex flex-col gap-2">
         <Skeleton className="h-6 w-64" />
         <Skeleton className="h-3 w-32" />
       </div>
 
-      <div className="flex flex-col gap-1">
+      <div className="flex flex-col">
         {Array.from({ length: STAGE_COUNT }).map((_, index) => (
           <div key={index} className="flex gap-3 pb-6">
             <Skeleton className="size-6 shrink-0 rounded-full" />

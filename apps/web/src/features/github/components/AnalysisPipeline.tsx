@@ -168,8 +168,8 @@ export function AnalysisPipeline({
   const activeStage = stages.find((stage) => stage.state === 'active' || stage.state === 'stalled');
 
   return (
-    <div className="flex flex-col gap-4">
-      <div className="flex flex-col gap-1">
+    <div className="flex flex-col gap-6">
+      <div className="flex flex-col gap-2">
         <h1 className="text-h2">{headlineFor(status, isStalled)}</h1>
         <p className="text-caption">
           {isStalled
